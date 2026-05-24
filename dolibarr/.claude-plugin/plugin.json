@@ -1,0 +1,9 @@
+{
+  "name": "dolibarr",
+  "version": "1.0.0",
+  "description": "Skills et agents pour le developpement de modules Dolibarr 21-23",
+  "author": {
+    "name": "DTS SARL - Cyrille Djoko",
+    "email": "contact@dywants.com"
+  }
+}
