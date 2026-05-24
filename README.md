@@ -9,34 +9,35 @@ supportant les fichiers d'instructions projet.
 
 ## Installation rapide
 
-### Depuis GitHub
+Une seule commande, depuis n'importe quel projet Dolibarr :
 
 ```bash
-# Telecharger et installer
-curl -fsSL https://raw.githubusercontent.com/dts-sarl/doliforge/main/install.sh | bash -s install
+# Claude Code (defaut)
+curl -fsSL https://raw.githubusercontent.com/DTS-Sarl/doliforge/main/install.sh | bash -s install
 
-# Ou cloner et installer
-git clone https://github.com/dts-sarl/doliforge.git ~/.doliforge
-cd mon-projet-dolibarr
-~/.doliforge/install.sh install
+# Cursor
+curl -fsSL https://raw.githubusercontent.com/DTS-Sarl/doliforge/main/install.sh | bash -s install cursor
+
+# Codex (OpenAI)
+curl -fsSL https://raw.githubusercontent.com/DTS-Sarl/doliforge/main/install.sh | bash -s install codex
+
+# Tous les outils d'un coup
+curl -fsSL https://raw.githubusercontent.com/DTS-Sarl/doliforge/main/install.sh | bash -s install all
 ```
 
-### Depuis le repo local
+Le script :
+1. **Telecharge DoliForge** dans `~/.doliforge/` (clone GitHub automatique)
+2. **Configure le projet courant** (skills, commands, instructions)
 
-```bash
-cd /chemin/vers/doliforge
-./install.sh install               # Claude Code (defaut)
-./install.sh install cursor        # Cursor
-./install.sh install codex         # Codex (OpenAI)
-./install.sh install all           # Tous les outils
-```
+Pas besoin de cloner manuellement. Pas besoin de telecharger quoi que ce soit.
 
 ### Que fait l'installation ?
 
-1. **Telecharge DoliForge** dans `~/.doliforge/` (ou copie depuis local)
-2. **Cree un symlink** `.claude/skills/dolibarr-module-dev` vers les fiches
-3. **Installe 4 slash commands** dans `.claude/commands/`
-4. **Injecte une section** dans `CLAUDE.md` (ou `.cursorrules` / `AGENTS.md`)
+| Outil | Fichiers configures |
+|---|---|
+| **Claude Code** | `.claude/skills/` (symlink) + `.claude/commands/` (4 commandes) + `CLAUDE.md` |
+| **Cursor** | `.cursorrules` (regles Dolibarr injectees) |
+| **Codex** | `AGENTS.md` (instructions agent injectees) |
 
 ## Commandes disponibles
 
@@ -56,16 +57,17 @@ sur un module Dolibarr.
 
 ```bash
 # Voir l'etat de l'installation
-./install.sh status
+~/.doliforge/install.sh status
 
 # Mettre a jour les skills depuis GitHub
-./install.sh update
+~/.doliforge/install.sh update
 
 # Desinstaller d'un projet
-./install.sh uninstall
+~/.doliforge/install.sh uninstall
 
 # Installer sur un autre projet
-./install.sh install claude /chemin/vers/autre-projet
+cd /chemin/vers/autre-projet
+~/.doliforge/install.sh install
 ```
 
 ## Contenu des skills
