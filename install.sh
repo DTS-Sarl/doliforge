@@ -5,7 +5,7 @@
 # ============================================================================
 set -euo pipefail
 
-DOLIFORGE_VERSION="1.3.0"
+DOLIFORGE_VERSION="1.4.0"
 DOLIFORGE_REPO="DTS-Sarl/doliforge"
 DOLIFORGE_BRANCH="main"
 DOLIFORGE_DIR="${HOME}/.doliforge"
@@ -121,7 +121,7 @@ install_doliforge() {
     if [ -d "${DOLIFORGE_DIR}/.git" ]; then
         log_info "DoliForge déjà installé — mise à jour..."
         cd "${DOLIFORGE_DIR}"
-        git pull origin "${DOLIFORGE_BRANCH}" --quiet 2>/dev/null || \
+        git pull --rebase origin "${DOLIFORGE_BRANCH}" --quiet 2>/dev/null || \
             log_warn "Impossible de pull — utilisation de la version locale"
         cd - > /dev/null
     elif [ -d "${DOLIFORGE_DIR}" ]; then
@@ -619,7 +619,7 @@ update_doliforge() {
 
     if [ -d "${DOLIFORGE_DIR}/.git" ]; then
         cd "${DOLIFORGE_DIR}"
-        git pull origin "${DOLIFORGE_BRANCH}" --quiet
+        git pull --rebase origin "${DOLIFORGE_BRANCH}" --quiet
         cd - > /dev/null
         log_info "DoliForge mis à jour"
     else
