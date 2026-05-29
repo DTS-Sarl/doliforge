@@ -5,7 +5,7 @@
 # ============================================================================
 set -euo pipefail
 
-DOLIFORGE_VERSION="1.2.0"
+DOLIFORGE_VERSION="1.3.0"
 DOLIFORGE_REPO="DTS-Sarl/doliforge"
 DOLIFORGE_BRANCH="main"
 DOLIFORGE_DIR="${HOME}/.doliforge"
@@ -41,13 +41,13 @@ log_error()   { echo -e "  ${RED}✗${NC}  $1"; }
 log_step()    { echo -e "\n  ${CYAN}›${NC}  ${BOLD}$1${NC}"; }
 
 # ============================================================================
-# Détection automatique de l'outil AI
+# Détection de l'outil AI + choix interactif
 # ============================================================================
-detect_tool() {
-    if [ -n "${1:-}" ]; then
-        echo "$1" ; return
-    fi
 
+# Vrai si stdin est un terminal (bash <(curl ...)) — faux si pipe (curl | bash)
+is_interactive() { [ -t 0 ]; }
+
+detect_tool() {
     if command -v claude &> /dev/null; then
         echo "claude"
     elif [ -d ".cursor" ] || [ -f ".cursorrules" ]; then
@@ -57,6 +57,54 @@ detect_tool() {
     else
         echo "claude"  # Défaut
     fi
+}
+
+ask_tool() {
+    local detected="${1:-claude}"
+
+    if ! is_interactive; then
+        # Mode non-interactif (curl | bash) — auto-détection silencieuse
+        echo "$detected"
+        return
+    fi
+
+    local labels=("Claude Code" "Cursor" "Codex (OpenAI)" "Tous les outils")
+    local values=("claude" "cursor" "codex" "all")
+    local default_idx=0
+    case "$detected" in cursor) default_idx=1 ;; codex) default_idx=2 ;; esac
+
+    echo ""
+    echo -e "  ${BOLD}Quel outil AI utilises-tu ?${NC}"
+    for i in "${!labels[@]}"; do
+        if [ "$i" -eq "$default_idx" ]; then
+            echo -e "  ${CYAN}›${NC} $((i+1))) ${labels[$i]}  ${DIM}(détecté)${NC}"
+        else
+            echo -e "     $((i+1))) ${labels[$i]}"
+        fi
+    done
+    echo ""
+    printf "  Choix [%d] : " "$((default_idx+1))"
+
+    local choice
+    read -r choice
+    choice="${choice:-$((default_idx+1))}"
+
+    if [[ "$choice" =~ ^[1-4]$ ]]; then
+        echo "${values[$((choice-1))]}"
+    else
+        echo "${values[$default_idx]}"
+    fi
+}
+
+# ============================================================================
+# Détection de la racine du projet
+# ============================================================================
+find_project_root() {
+    # Remonter jusqu'à la racine git si disponible
+    local git_root
+    git_root=$(git rev-parse --show-toplevel 2>/dev/null) && echo "$git_root" && return
+    # Sinon dossier courant
+    pwd
 }
 
 # ============================================================================
@@ -495,11 +543,28 @@ main() {
             print_banner
             install_doliforge
 
-            local tool
-            tool=$(detect_tool "${2:-}")
-            log_info "Outil détecté : ${tool}"
+            # Racine du projet (git root ou dossier courant)
+            local project_dir
+            if [ -n "${3:-}" ]; then
+                project_dir="$3"
+            else
+                project_dir=$(find_project_root)
+            fi
+            local project_name
+            project_name="$(basename "$(cd "$project_dir" && pwd)")"
+            if [ "$project_dir" != "$(pwd)" ]; then
+                log_info "Racine du projet : ${project_dir}"
+            fi
 
-            setup_project "$tool" "${3:-.}"
+            # Choix de l'outil (interactif si stdin est un terminal)
+            local tool
+            if [ -n "${2:-}" ]; then
+                tool="$2"
+            else
+                tool=$(ask_tool "$(detect_tool)")
+            fi
+
+            setup_project "$tool" "$project_dir"
 
             echo ""
             echo -e "  ${GREEN}${BOLD}DoliForge installé !${NC}"
@@ -524,7 +589,7 @@ main() {
             ;;
         help|--help|-h)
             print_banner
-            echo "  Usage : bash <(curl -fsSL https://raw.githubusercontent.com/${DOLIFORGE_REPO}/${DOLIFORGE_BRANCH}/install.sh)"
+            echo -e "  ${BOLD}Usage${NC} : bash <(curl -fsSL https://raw.githubusercontent.com/${DOLIFORGE_REPO}/${DOLIFORGE_BRANCH}/install.sh)"
             echo ""
             echo -e "  ${BOLD}Commandes avancées${NC} (depuis ~/.doliforge/install.sh) :"
             echo "  install [tool] [path]   Installer sans menu interactif"

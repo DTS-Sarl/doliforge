@@ -9,18 +9,22 @@ supportant les fichiers d'instructions projet.
 
 ## Installation
 
-Depuis n'importe quel projet Dolibarr, une seule commande :
+Depuis la **racine** d'un projet Dolibarr, une seule commande :
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/DTS-Sarl/doliforge/main/install.sh | bash
+bash <(curl -fsSL https://raw.githubusercontent.com/DTS-Sarl/doliforge/main/install.sh)
 ```
 
 Le script :
 1. **Telecharge DoliForge** dans `~/.doliforge/` (clone GitHub automatique)
-2. **Detecte automatiquement** l'outil AI utilise (Claude Code, Cursor, Codex)
-3. **Configure le projet courant** en consequence
+2. **Detecte l'outil AI** et te propose de confirmer ou choisir (Claude Code, Cursor, Codex)
+3. **Detecte la racine git** du projet et configure dans le bon dossier
 
 Pas besoin de cloner manuellement. Pas besoin de passer d'arguments.
+
+> **Pourquoi `bash <(curl ...)` et pas `curl | bash` ?**
+> Le premier garde stdin ouvert pour le menu interactif. Le second pipe stdin
+> et empeche toute saisie — DoliForge bascule alors en auto-detection silencieuse.
 
 ### Que fait l'installation ?
 
