@@ -73,17 +73,18 @@ ask_tool() {
     local default_idx=0
     case "$detected" in cursor) default_idx=1 ;; codex) default_idx=2 ;; esac
 
-    echo ""
-    echo -e "  ${BOLD}Quel outil AI utilises-tu ?${NC}"
+    # Tout l'affichage sur stderr — stdout est capturé par $() pour récupérer la valeur
+    echo "" >&2
+    echo -e "  ${BOLD}Quel outil AI utilises-tu ?${NC}" >&2
     for i in "${!labels[@]}"; do
         if [ "$i" -eq "$default_idx" ]; then
-            echo -e "  ${CYAN}›${NC} $((i+1))) ${labels[$i]}  ${DIM}(détecté)${NC}"
+            echo -e "  ${CYAN}›${NC} $((i+1))) ${labels[$i]}  ${DIM}(détecté)${NC}" >&2
         else
-            echo -e "     $((i+1))) ${labels[$i]}"
+            echo -e "     $((i+1))) ${labels[$i]}" >&2
         fi
     done
-    echo ""
-    printf "  Choix [%d] : " "$((default_idx+1))"
+    echo "" >&2
+    printf "  Choix [%d] : " "$((default_idx+1))" >&2
 
     local choice
     read -r choice
