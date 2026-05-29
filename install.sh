@@ -79,7 +79,7 @@ select_tool() {
         fi
     done
     echo ""
-    printf "  Choix [%d] : " "$((default_idx+1))"
+    printf "  Numéro + Entrée [%d] : " "$((default_idx+1))"
 
     local choice
     read -r choice < /dev/tty   # Lire depuis le terminal, pas stdin
