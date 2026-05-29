@@ -53,6 +53,7 @@ Toute page affiche son contenu entre `llxHeader()` et `llxFooter()`. C'est ce qu
 fournit le menu, le thème et la structure HTML de Dolibarr.
 
 Incorrect :
+
 ```php
 print '<html><body>';
 print '<h1>Ma page</h1>';
@@ -60,6 +61,7 @@ print '</body></html>';
 ```
 
 Correct :
+
 ```php
 llxHeader('', $langs->trans('MonObjet'));
 print load_fiche_titre($langs->trans('MonObjet'));
@@ -102,11 +104,13 @@ Une URL codée en dur casse selon que le module est en `htdocs/custom/` ou inté
 Toujours passer par `dol_buildpath()`.
 
 Incorrect :
+
 ```php
 $url = '/custom/monmodule/monobjetcard.php?id='.$object->id;
 ```
 
 Correct :
+
 ```php
 $url = dol_buildpath('/monmodule/monobjetcard.php', 1).'?id='.$object->id;
 ```
@@ -117,11 +121,13 @@ Ne pas utiliser `require`/`include` avec un chemin absolu en dur. `dol_include_o
 résout le chemin que le module soit en `custom/` ou intégré.
 
 Incorrect :
+
 ```php
 require_once DOL_DOCUMENT_ROOT.'/custom/monmodule/class/monobjet.class.php';
 ```
 
 Correct :
+
 ```php
 dol_include_once('/monmodule/class/monobjet.class.php');
 ```
@@ -205,7 +211,7 @@ print dol_get_fiche_end();
 ## Classes CSS Dolibarr — référence
 
 | Classe | Usage |
-|---|---|
+| --- | --- |
 | `border centpercent` | Table avec bordures, largeur 100% |
 | `noborder centpercent` | Table sans bordures internes |
 | `liste_titre` | Ligne d'en-tête de tableau |
@@ -251,3 +257,245 @@ if ($action == 'confirm_delete' && GETPOST('confirm', 'alpha') == 'yes') {
     // ...
 }
 ```
+
+---
+
+## Barre d'actions (`tabsAction`) — position et ordre natifs
+
+La barre d'actions est **toujours** dans un `<div class="tabsAction">`, après
+`dol_get_fiche_end()`. L'ordre des boutons est immuable : retour liste à gauche,
+actions à droite, suppression en dernier.
+
+```php
+print dol_get_fiche_end();
+
+print '<div class="tabsAction">';
+
+// 1. Retour liste — toujours premier, à gauche
+print dolGetButtonAction('', $langs->trans('BackToList'), 'default',
+    dol_buildpath('/monmodule/monobjetlist.php', 1), '');
+
+// 2. Bouton Modifier
+if ($user->hasRight('monmodule', 'monobjet', 'write')) {
+    print dolGetButtonAction('', $langs->trans('Modify'), 'default',
+        $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=edit&token='.newToken(), '');
+}
+
+// 3. Bouton Valider
+if ($object->status == MonObjet::STATUS_DRAFT
+    && $user->hasRight('monmodule', 'monobjet', 'write')) {
+    print dolGetButtonAction('', $langs->trans('Validate'), 'default',
+        $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=confirm_validate&token='.newToken(),
+        '', 1);
+}
+
+// 4. Suppression — toujours dernier
+if ($user->hasRight('monmodule', 'monobjet', 'delete')) {
+    print dolGetButtonAction('', $langs->trans('Delete'), 'delete',
+        $_SERVER['PHP_SELF'].'?id='.$object->id.'&action=delete&token='.newToken(), '');
+}
+
+print '</div>';
+```
+
+Ne jamais recréer des boutons `<a>` ou `<button>` manuels pour ces actions —
+`dolGetButtonAction()` gère le style, la grisure et le tooltip natif Dolibarr.
+
+---
+
+## Onglets de fiche — `prepare_head()` + `dol_get_fiche_head()`
+
+Les onglets sont déclarés dans `lib/monmodule.lib.php` :
+
+```php
+// lib/monmodule.lib.php
+function monobjet_prepare_head($object)
+{
+    global $langs, $conf, $user;
+    $langs->load('monmodule@monmodule');
+
+    $h = 0;
+    $head = [];
+
+    $head[$h][0] = dol_buildpath('/monmodule/monobjetcard.php', 1).'?id='.$object->id;
+    $head[$h][1] = $langs->trans('Card');
+    $head[$h][2] = 'card';
+    $h++;
+
+    // Onglet conditionnel (si module activé)
+    if (isModEnabled('ecm')) {
+        $head[$h][0] = dol_buildpath('/monmodule/monobjetcard.php', 1)
+            .'?id='.$object->id.'&tab=documents';
+        $head[$h][1] = $langs->trans('Documents');
+        $head[$h][2] = 'documents';
+        $h++;
+    }
+
+    complete_head_from_modules($conf, $langs, $object, $head, $h,
+        'monobjet@monmodule');
+
+    return $head;
+}
+```
+
+Utilisation dans la page fiche :
+
+```php
+$head = monobjet_prepare_head($object);
+print dol_get_fiche_head($head, 'card', $langs->trans('MonObjet'),
+    -1, 'monobjet@monmodule');
+
+// ... contenu de l'onglet ...
+
+print dol_get_fiche_end();
+```
+
+---
+
+## Page liste complète — structure recommandée
+
+```php
+<?php
+// 1. Environnement + droits
+$res = @include '../main.inc.php';
+if (!$res) $res = @include '../../main.inc.php';
+dol_include_once('/monmodule/class/monobjet.class.php');
+
+global $db, $conf, $user, $langs;
+$langs->load('monmodule@monmodule');
+
+if (!isModEnabled('monmodule')) accessforbidden();
+if (!$user->hasRight('monmodule', 'monobjet', 'read')) accessforbidden();
+
+// 2. Paramètres de liste
+$limit     = GETPOST('limit', 'int') ?: $conf->liste_limit;
+$page      = GETPOSTISSET('pageplusone') ? (GETPOST('pageplusone') - 1) : GETPOST('page', 'int');
+if ($page < 0) $page = 0;
+$offset    = $limit * $page;
+$sortfield = GETPOST('sortfield', 'aZ09comma') ?: 't.rowid';
+$sortorder = GETPOST('sortorder', 'aZ09comma') ?: 'DESC';
+
+// 3. Filtres
+$search_ref   = GETPOST('search_ref', 'alphanohtml');
+$search_label = GETPOST('search_label', 'alphanohtml');
+
+// Reset filtres
+if (GETPOST('button_removefilter')) {
+    $search_ref = $search_label = '';
+}
+
+// 4. Requête
+$object = new MonObjet($db);
+$sql = 'SELECT t.rowid, t.ref, t.label, t.date_creation, t.status';
+$sql .= ' FROM '.MAIN_DB_PREFIX.'monmodule_monobjet AS t';
+$sql .= ' WHERE t.entity IN ('.getEntity('monobjet').')';
+if ($search_ref)   $sql .= " AND t.ref LIKE '%".$db->escape($search_ref)."%'";
+if ($search_label) $sql .= " AND t.label LIKE '%".$db->escape($search_label)."%'";
+$sql .= $db->order($sortfield, $sortorder);
+$sql .= $db->plimit($limit, $offset);
+
+$resql = $db->query($sql);
+
+// 5. Affichage
+llxHeader('', $langs->trans('MonObjets'));
+
+$param = '';
+if ($search_ref)   $param .= '&search_ref='.urlencode($search_ref);
+if ($search_label) $param .= '&search_label='.urlencode($search_label);
+
+// Bouton créer
+print load_fiche_titre($langs->trans('ListOf', $langs->transnoentitiesnoconv('MonObjets')), '', 'monobjet@monmodule');
+
+print '<form method="GET" action="'.$_SERVER['PHP_SELF'].'">';
+print '<table class="noborder centpercent">';
+
+// Ligne en-têtes colonnes avec tri
+print '<tr class="liste_titre">';
+print getTitleFieldOfList('Ref', 0, $_SERVER['PHP_SELF'], 't.ref', '', $param, '', $sortfield, $sortorder).'</tr>';
+
+// Ligne filtres
+print '<tr class="liste_titre_add">';
+print '<td><input type="text" class="flat maxwidth75" name="search_ref"';
+print ' value="'.dol_escape_htmltag($search_ref).'"></td>';
+print '<td><input type="submit" class="button smallpadding" value="'.$langs->trans('Search').'"></td>';
+print '</tr>';
+
+// Lignes de données
+if ($resql) {
+    while ($obj = $db->fetch_object($resql)) {
+        print '<tr class="oddeven">';
+        print '<td><a href="monobjetcard.php?id='.$obj->rowid.'">';
+        print dol_escape_htmltag($obj->ref).'</a></td>';
+        print '</tr>';
+    }
+    $db->free($resql);
+}
+
+print '</table>';
+print '</form>';
+
+// Pagination
+print_barre_liste('', $page, $_SERVER['PHP_SELF'], $param, $sortfield,
+    $sortorder, '', $db->num_rows($resql), $limit, 'monobjet@monmodule');
+
+llxFooter();
+$db->close();
+```
+
+---
+
+## Badges de statut — utiliser le système natif
+
+Utiliser `$object->getLibStatut(5)` qui retourne un badge HTML natif Dolibarr.
+Définir les badges dans la classe métier :
+
+```php
+// Dans class/monobjet.class.php
+const STATUS_DRAFT     = 0;
+const STATUS_VALIDATED = 1;
+const STATUS_CLOSED    = 9;
+
+public function getLibStatut($mode = 0)
+{
+    return $this->LibStatut($this->status, $mode);
+}
+
+public function LibStatut($status, $mode = 0)
+{
+    if ($mode == 0) {
+        $label = '';
+        if ($status == self::STATUS_DRAFT)     $label = $this->langs->trans('Draft');
+        if ($status == self::STATUS_VALIDATED) $label = $this->langs->trans('Validated');
+        if ($status == self::STATUS_CLOSED)    $label = $this->langs->trans('Closed');
+        return $label;
+    }
+    if ($mode == 1 || $mode == 2 || $mode == 3 || $mode == 4 || $mode == 5) {
+        $params = ['css' => 'minwidth75'];
+        $label  = '';
+        $picto  = '';
+        if ($status == self::STATUS_DRAFT) {
+            return dolGetStatus($this->langs->trans('Draft'), '', '', 'status0', $mode, 'dot', $params);
+        }
+        if ($status == self::STATUS_VALIDATED) {
+            return dolGetStatus($this->langs->trans('Validated'), '', '', 'status1', $mode, 'dot', $params);
+        }
+        if ($status == self::STATUS_CLOSED) {
+            return dolGetStatus($this->langs->trans('Closed'), '', '', 'status6', $mode, 'dot', $params);
+        }
+    }
+}
+```
+
+Couleurs de statut standards (`status0` à `status9`) :
+
+| Code | Couleur | Usage typique |
+| --- | --- | --- |
+| `status0` | gris | Brouillon |
+| `status1` | vert | Validé / Actif |
+| `status3` | jaune | En attente |
+| `status4` | bleu | En cours |
+| `status6` | orange | Clôturé / Archivé |
+| `status8` | rouge | Annulé / Erreur |
+
+Ne jamais créer ses propres badges CSS custom pour les statuts — utiliser
+`dolGetStatus()` pour rester cohérent avec l'interface native Dolibarr.

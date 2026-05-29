@@ -32,6 +32,8 @@ Pas besoin de cloner manuellement. Pas besoin de passer d'arguments.
 |---|---|
 | **Claude Code** | `.claude/skills/` (symlink) + `.claude/commands/` (4 commandes) + `CLAUDE.md` |
 | **Cursor** | `.cursorrules` (regles Dolibarr injectees) |
+| **Windsurf** | `.windsurfrules` (regles Dolibarr injectees) |
+| **Cline** | `.clinerules` (regles Dolibarr injectees) |
 | **Codex** | `AGENTS.md` (instructions agent injectees) |
 
 ## Commandes disponibles
@@ -44,6 +46,7 @@ Apres installation, dans Claude Code :
 | `/dolibarr-create` | Creer un nouveau module Dolibarr depuis zero |
 | `/dolibarr-debug` | Diagnostiquer un probleme (erreur 500, trigger inactif, etc.) |
 | `/dolibarr-publish` | Preparer un module pour publication DoliStore |
+| `/dolibarr-upgrade` | Migrer un module vers une version Dolibarr superieure |
 
 Le skill se declenche aussi **automatiquement** quand Claude detecte du travail
 sur un module Dolibarr.
@@ -79,7 +82,7 @@ cd /chemin/vers/autre-projet
 | `base-de-donnees.md` | SQL, prefixe, `entity`, migrations, helpers SQL |
 | `securite.md` | `GETPOST`, CSRF, SQL, permissions, pages AJAX, filtres |
 | `hooks-et-triggers.md` | Hooks, triggers, extrafields, evenements courants |
-| `pages-ui.md` | Ossature page, formulaires, CSS Dolibarr, PRG, confirmation |
+| `pages-ui.md` | Ossature page, barre d'actions, onglets, liste complete, badges statut |
 | `css-js.md` | Variables CSS, pas de degrades, coherence inter-pages, namespace JS |
 | `conventions-code.md` | Helpers, retours, transactions, `.lang`, admin, fallbacks |
 | `internationalisation.md` | Fichiers `.lang`, `$langs->trans()`, parametres, pluriels |
@@ -93,10 +96,12 @@ cd /chemin/vers/autre-projet
 | `versioning-changelog.md` | Numerotation versions, format ChangeLog, nommage ZIP |
 | `dolistore-publication.md` | Checklist, ZIP, publication DoliStore |
 
-### Agent `dolibarr-auditeur`
+### Agents
 
-Agent specialise pour auditer du code de module Dolibarr (securite,
-compatibilite, conventions).
+| Agent | Role |
+| --- | --- |
+| `dolibarr-auditeur` | Audit securite, compatibilite, conventions, CSS/JS |
+| `dolibarr-createur` | Creation module from scratch — guide 9 etapes, produit le code complet |
 
 ## Structure du depot
 
@@ -108,7 +113,8 @@ doliforge/
 ├── dolibarr/
 │   ├── .claude-plugin/
 │   ├── agents/
-│   │   └── dolibarr-auditeur.md   # Agent d'audit
+│   │   ├── dolibarr-auditeur.md   # Agent d'audit
+│   │   └── dolibarr-createur.md   # Agent de creation
 │   └── skills/
 │       └── dolibarr-module-dev/
 │           ├── SKILL.md           # Index principal du skill

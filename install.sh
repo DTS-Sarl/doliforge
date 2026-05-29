@@ -52,6 +52,10 @@ detect_tool() {
         echo "claude"
     elif [ -d ".cursor" ] || [ -f ".cursorrules" ]; then
         echo "cursor"
+    elif [ -f ".windsurfrules" ] || [ -d ".windsurf" ]; then
+        echo "windsurf"
+    elif [ -f ".clinerules" ]; then
+        echo "cline"
     elif [ -f "codex.yaml" ] || [ -f ".codex" ] || [ -f "AGENTS.md" ]; then
         echo "codex"
     else
@@ -64,10 +68,15 @@ select_tool() {
     # Appelée directement (pas dans $()) pour que echo et read fonctionnent normalement
     local detected="${1:-claude}"
 
-    local labels=("Claude Code" "Cursor" "Codex (OpenAI)" "Tous les outils")
-    local values=("claude" "cursor" "codex" "all")
+    local labels=("Claude Code" "Cursor" "Windsurf" "Cline" "Codex (OpenAI)" "Tous les outils")
+    local values=("claude" "cursor" "windsurf" "cline" "codex" "all")
     local default_idx=0
-    case "$detected" in cursor) default_idx=1 ;; codex) default_idx=2 ;; esac
+    case "$detected" in
+        cursor)   default_idx=1 ;;
+        windsurf) default_idx=2 ;;
+        cline)    default_idx=3 ;;
+        codex)    default_idx=4 ;;
+    esac
 
     echo ""
     echo -e "  ${BOLD}Quel outil AI utilises-tu ?${NC}"
@@ -85,7 +94,7 @@ select_tool() {
     read -r choice < /dev/tty   # Lire depuis le terminal, pas stdin
     choice="${choice:-$((default_idx+1))}"
 
-    if [[ "$choice" =~ ^[1-4]$ ]]; then
+    if [[ "$choice" =~ ^[1-6]$ ]]; then
         SELECTED_TOOL="${values[$((choice-1))]}"
     else
         SELECTED_TOOL="${values[$default_idx]}"
@@ -160,12 +169,16 @@ setup_project() {
     log_step "Configuration de ${project_name} pour ${tool}"
 
     case "$tool" in
-        claude) setup_claude_code "$project_dir" ;;
-        cursor) setup_cursor "$project_dir" ;;
-        codex)  setup_codex "$project_dir" ;;
+        claude)   setup_claude_code "$project_dir" ;;
+        cursor)   setup_cursor "$project_dir" ;;
+        windsurf) setup_windsurf "$project_dir" ;;
+        cline)    setup_cline "$project_dir" ;;
+        codex)    setup_codex "$project_dir" ;;
         all)
             setup_claude_code "$project_dir"
             setup_cursor "$project_dir"
+            setup_windsurf "$project_dir"
+            setup_cline "$project_dir"
             setup_codex "$project_dir"
             ;;
         *)
@@ -273,12 +286,33 @@ Charge le skill `dolibarr-module-dev` et execute la checklist de publication
 decrite dans `references/dolistore-publication.md`.
 
 Procedure :
-1. Execute l'audit complet (3 passes)
+1. Execute l'audit complet (4 passes : securite, compat, conventions, CSS/JS)
 2. Verifie la checklist DoliStore point par point
 3. Prepare le paquet ZIP avec le bon nommage
 4. Liste les problemes bloquants restants
 
 Argument optionnel : $ARGUMENTS (nom du module a publier)
+CMDEOF
+
+    cat > "${cmd_dir}/dolibarr-upgrade.md" << 'CMDEOF'
+---
+description: Migrer un module Dolibarr vers une version superieure
+---
+
+Charge le skill `dolibarr-module-dev` et guide la migration du module
+vers une version Dolibarr cible.
+
+Procedure :
+1. Identifier la version source et la version cible
+2. Verifier les API et methodes depreciees entre les deux versions
+3. Adapter les requetes SQL si necessaire (migrations additives uniquement)
+4. Verifier la compatibilite multi-entite et les hooks/triggers
+5. Executer l'audit complet sur les fichiers modifies
+6. Valider la checklist de publication DoliStore
+
+References : `references/refactoring.md` + `references/base-de-donnees.md`
+
+Argument optionnel : $ARGUMENTS (ex: "migrer de Dolibarr 18 vers 22")
 CMDEOF
 }
 
@@ -319,6 +353,7 @@ les fiches de référence appropriées du skill `dolibarr-module-dev` :
 | `/dolibarr-create` | Créer un nouveau module depuis zéro |
 | `/dolibarr-debug` | Diagnostiquer un problème |
 | `/dolibarr-publish` | Préparer pour publication DoliStore |
+| `/dolibarr-upgrade` | Migrer un module vers une version Dolibarr supérieure |
 <!-- /DOLIFORGE -->
 SECTIONEOF
 }
@@ -381,6 +416,116 @@ CURSOREOF
     log_info ".cursorrules configuré pour Cursor"
 }
 
+# ---- Windsurf ----
+setup_windsurf() {
+    local project_dir="$1"
+    local rules_file="${project_dir}/.windsurfrules"
+
+    if [ -f "$rules_file" ] && grep -q "# DOLIFORGE" "$rules_file" 2>/dev/null; then
+        log_warn ".windsurfrules contient déjà DoliForge — ignoré"
+        return
+    fi
+
+    cat >> "$rules_file" << 'WINDSURFEOF'
+
+# DOLIFORGE — Règles de développement Dolibarr
+# Généré par DoliForge (DTS SARL) — ne pas modifier manuellement
+
+Quand tu travailles sur un module Dolibarr, respecte ces règles :
+
+## Sécurité obligatoire
+- Toute entrée via GETPOST('nom', 'type') — jamais $_GET/$_POST
+- Jeton CSRF newToken() sur tout formulaire POST
+- Échappement SQL : $db->escape() pour chaînes, (int) pour entiers
+- Permissions : hasRight() + restrictedArea() avant tout traitement
+- Sortie : dol_escape_htmltag() sur contenu dynamique
+
+## Structure
+- Module dans htdocs/custom/<module>/
+- Descripteur : core/modules/modXxx.class.php extends DolibarrModules
+- Classes métier : extends CommonObject avec pattern $fields
+- Pages : llxHeader()/llxFooter(), setEventMessages()
+- SQL : MAIN_DB_PREFIX en PHP, llx_ dans fichiers .sql
+- Entity obligatoire pour multi-société
+
+## Conventions
+- Globales : global $db, $conf, $user, $langs;
+- Retours : > 0 succès, 0 neutre, < 0 erreur (jamais booléens)
+- Helpers : dol_syslog(), dol_now(), dol_print_date(), dol_buildpath()
+- Transactions : $db->begin() / commit() / rollback()
+- Traductions : $langs->trans() — jamais texte en dur
+- Indentation : tabulations (pas espaces)
+
+## CSS/JS
+- Jamais de dégradés CSS (linear-gradient interdit)
+- Couleurs en variables :root --monmodule-*
+- Pas de CDN — librairies dans js/vendor/
+- JS dans namespace unique
+- Continuité visuelle : hériter des styles natifs Dolibarr
+
+## Références détaillées
+Les fiches complètes sont dans ~/.doliforge/dolibarr/skills/dolibarr-module-dev/references/
+# /DOLIFORGE
+WINDSURFEOF
+
+    log_info ".windsurfrules configuré pour Windsurf"
+}
+
+# ---- Cline ----
+setup_cline() {
+    local project_dir="$1"
+    local rules_file="${project_dir}/.clinerules"
+
+    if [ -f "$rules_file" ] && grep -q "# DOLIFORGE" "$rules_file" 2>/dev/null; then
+        log_warn ".clinerules contient déjà DoliForge — ignoré"
+        return
+    fi
+
+    cat >> "$rules_file" << 'CLINEEOF'
+
+# DOLIFORGE — Règles de développement Dolibarr
+# Généré par DoliForge (DTS SARL) — ne pas modifier manuellement
+
+Quand tu travailles sur un module Dolibarr, respecte ces règles :
+
+## Sécurité obligatoire
+- Toute entrée via GETPOST('nom', 'type') — jamais $_GET/$_POST
+- Jeton CSRF newToken() sur tout formulaire POST
+- Échappement SQL : $db->escape() pour chaînes, (int) pour entiers
+- Permissions : hasRight() + restrictedArea() avant tout traitement
+- Sortie : dol_escape_htmltag() sur contenu dynamique
+
+## Structure
+- Module dans htdocs/custom/<module>/
+- Descripteur : core/modules/modXxx.class.php extends DolibarrModules
+- Classes métier : extends CommonObject avec pattern $fields
+- Pages : llxHeader()/llxFooter(), setEventMessages()
+- SQL : MAIN_DB_PREFIX en PHP, llx_ dans fichiers .sql
+- Entity obligatoire pour multi-société
+
+## Conventions
+- Globales : global $db, $conf, $user, $langs;
+- Retours : > 0 succès, 0 neutre, < 0 erreur (jamais booléens)
+- Helpers : dol_syslog(), dol_now(), dol_print_date(), dol_buildpath()
+- Transactions : $db->begin() / commit() / rollback()
+- Traductions : $langs->trans() — jamais texte en dur
+- Indentation : tabulations (pas espaces)
+
+## CSS/JS
+- Jamais de dégradés CSS (linear-gradient interdit)
+- Couleurs en variables :root --monmodule-*
+- Pas de CDN — librairies dans js/vendor/
+- JS dans namespace unique
+- Continuité visuelle : hériter des styles natifs Dolibarr
+
+## Références détaillées
+Les fiches complètes sont dans ~/.doliforge/dolibarr/skills/dolibarr-module-dev/references/
+# /DOLIFORGE
+CLINEEOF
+
+    log_info ".clinerules configuré pour Cline"
+}
+
 # ---- Codex (OpenAI) ----
 setup_codex() {
     local project_dir="$1"
@@ -429,6 +574,7 @@ uninstall_project() {
     rm -f "${project_dir}/.claude/commands/dolibarr-create.md"
     rm -f "${project_dir}/.claude/commands/dolibarr-debug.md"
     rm -f "${project_dir}/.claude/commands/dolibarr-publish.md"
+    rm -f "${project_dir}/.claude/commands/dolibarr-upgrade.md"
     log_info "Slash commands supprimées"
 
     if [ -f "${project_dir}/CLAUDE.md" ]; then
@@ -441,6 +587,18 @@ uninstall_project() {
         sed -i.bak '/# DOLIFORGE/,/# \/DOLIFORGE/d' "${project_dir}/.cursorrules"
         rm -f "${project_dir}/.cursorrules.bak"
         log_info "Section DoliForge retirée de .cursorrules"
+    fi
+
+    if [ -f "${project_dir}/.windsurfrules" ]; then
+        sed -i.bak '/# DOLIFORGE/,/# \/DOLIFORGE/d' "${project_dir}/.windsurfrules"
+        rm -f "${project_dir}/.windsurfrules.bak"
+        log_info "Section DoliForge retirée de .windsurfrules"
+    fi
+
+    if [ -f "${project_dir}/.clinerules" ]; then
+        sed -i.bak '/# DOLIFORGE/,/# \/DOLIFORGE/d' "${project_dir}/.clinerules"
+        rm -f "${project_dir}/.clinerules.bak"
+        log_info "Section DoliForge retirée de .clinerules"
     fi
 
     if [ -f "${project_dir}/AGENTS.md" ]; then
