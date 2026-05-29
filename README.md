@@ -65,7 +65,7 @@ cd /chemin/vers/autre-projet
 
 ### Skill `dolibarr-module-dev`
 
-12 fiches de reference couvrant tout le cycle de vie d'un module :
+19 fiches couvrant tout le cycle de vie d'un module :
 
 | Fiche | Sujet |
 |---|---|
@@ -76,11 +76,18 @@ cd /chemin/vers/autre-projet
 | `securite.md` | `GETPOST`, CSRF, SQL, permissions, pages AJAX, filtres |
 | `hooks-et-triggers.md` | Hooks, triggers, extrafields, evenements courants |
 | `pages-ui.md` | Ossature page, formulaires, CSS Dolibarr, PRG, confirmation |
+| `css-js.md` | Variables CSS, pas de degrades, coherence inter-pages, namespace JS |
 | `conventions-code.md` | Helpers, retours, transactions, `.lang`, admin, fallbacks |
+| `internationalisation.md` | Fichiers `.lang`, `$langs->trans()`, parametres, pluriels |
 | `compatibilite-ecosysteme.md` | Multi-entite, dependances, cycle de test |
 | `pieges.md` | Pieges courants, cache, WAF, `restrictedArea` |
-| `dolistore-publication.md` | Checklist, ZIP, versionning |
-| `debug.md` | Methodologie debug, logs, erreurs courantes, diagnostic |
+| `debug.md` | Methodologie debug, instruments visuels, erreurs courantes |
+| `refactoring.md` | Restructurer sans casser, extraction de classes, migrations SQL |
+| `performance.md` | Requetes lentes, N+1, index SQL, pagination, cache |
+| `tests.md` | Page de test admin, fixtures SQL, checklist recette |
+| `api-rest.md` | Consommer et exposer des endpoints REST Dolibarr |
+| `versioning-changelog.md` | Numerotation versions, format ChangeLog, nommage ZIP |
+| `dolistore-publication.md` | Checklist, ZIP, publication DoliStore |
 
 ### Agent `dolibarr-auditeur`
 
@@ -101,7 +108,7 @@ doliforge/
 │   └── skills/
 │       └── dolibarr-module-dev/
 │           ├── SKILL.md           # Index principal du skill
-│           └── references/        # 12 fiches thematiques
+│           └── references/        # 19 fiches thematiques
 │               ├── structure-module.md
 │               ├── descripteur.md
 │               ├── objets-metier.md
@@ -109,11 +116,18 @@ doliforge/
 │               ├── securite.md
 │               ├── hooks-et-triggers.md
 │               ├── pages-ui.md
+│               ├── css-js.md
 │               ├── conventions-code.md
+│               ├── internationalisation.md
 │               ├── compatibilite-ecosysteme.md
 │               ├── pieges.md
-│               ├── dolistore-publication.md
-│               └── debug.md
+│               ├── debug.md
+│               ├── refactoring.md
+│               ├── performance.md
+│               ├── tests.md
+│               ├── api-rest.md
+│               ├── versioning-changelog.md
+│               └── dolistore-publication.md
 ```
 
 ## Compatibilite multi-outils

@@ -1,21 +1,21 @@
 {
   "name": "doliforge",
   "owner": {
-    "name": "DTS SARL - Cyrille Djoko",
-    "email": "contact@dywants.com"
+    "name": "Cyrille Thibaut BAYONG",
+    "email": "contact@dts.cm"
   },
   "metadata": {
-    "description": "DoliForge - la forge a modules Dolibarr de DTS SARL : skills et agents pour developper et auditer des modules Dolibarr 21-23"
+    "description": "DoliForge - la forge IA de DTS SARL : skills et agents pour developper et auditer des modules Dolibarr 18-23"
   },
   "plugins": [
     {
       "name": "dolibarr",
       "source": "./dolibarr",
-      "description": "Developpement, creation et audit de modules Dolibarr 21-23 : structure, securite, compatibilite ecosysteme",
+      "description": "Developpement, creation et audit de modules Dolibarr 18-23 : structure, securite, compatibilite ecosysteme, CSS/JS, i18n, publication DoliStore",
       "version": "1.0.0",
       "author": {
-        "name": "DTS SARL - Cyrille Djoko",
-        "email": "contact@dywants.com"
+        "name": "Cyrille Thibaut BAYONG",
+        "email": "contact@dts.cm"
       },
       "category": "productivity"
     }
