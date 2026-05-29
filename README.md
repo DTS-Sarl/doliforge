@@ -107,6 +107,7 @@ cd /chemin/vers/autre-projet
 | `dolibarr-auditeur` | Audit securite, compatibilite, conventions, CSS/JS |
 | `dolibarr-createur` | Creation module from scratch — guide 9 etapes, produit le code complet |
 | `dolibarr-optimiseur` | Audit performance : N+1, index manquants, pagination, assets |
+| `dolibarr-migrateur` | Refactoring et migration de modules vers une version Dolibarr cible |
 
 ### Template de module
 
@@ -120,8 +121,12 @@ Un squelette de module pret a l'emploi est disponible dans `templates/monmodule/
 - `admin/setup.php` et `admin/about.php` — pages admin standard
 - `monobjetcard.php` — fiche CRUD complete avec `tabsAction`
 - `monobjetlist.php` — liste avec filtres, pagination, badges statut
+- `ajax/monmodule.ajax.php` — handler AJAX complet (JSON in/out, permissions)
+- `class/actions_monmodule.class.php` — handler de hooks (onglet, champs, colonne)
+- `core/triggers/interface_99_modMonmodule_Trigger.class.php` — trigger non-bloquant
 - `css/monmodule.css` — variables `:root`, pas de degrades
 - `js/monmodule.js` — namespace JS + helper AJAX
+- `index.php` dans chaque sous-dossier — protection repertoire (convention Dolibarr)
 
 Pour creer un nouveau module, copier le dossier et remplacer `monmodule` / `MonModule` / `monobjet` / `MonObjet` par les noms de ton module (voir `templates/monmodule/README.md`).
 
@@ -143,13 +148,18 @@ doliforge/
 │       ├── css/
 │       ├── js/
 │       ├── monobjetcard.php
-│       └── monobjetlist.php
+│       ├── monobjetlist.php
+│       ├── index.php
+│       ├── ajax/
+│       ├── class/
+│       └── core/triggers/
 └── dolibarr/
     ├── .claude-plugin/
     ├── agents/
     │   ├── dolibarr-auditeur.md   # Agent d'audit
     │   ├── dolibarr-createur.md   # Agent de creation
-    │   └── dolibarr-optimiseur.md # Agent de performance
+    │   ├── dolibarr-optimiseur.md # Agent de performance
+    │   └── dolibarr-migrateur.md  # Agent de refactoring/migration
     └── skills/
         └── dolibarr-module-dev/
             ├── SKILL.md           # Index principal du skill

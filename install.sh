@@ -5,7 +5,7 @@
 # ============================================================================
 set -euo pipefail
 
-DOLIFORGE_VERSION="1.5.0"
+DOLIFORGE_VERSION="1.6.0"
 DOLIFORGE_REPO="DTS-Sarl/doliforge"
 DOLIFORGE_BRANCH="main"
 DOLIFORGE_DIR="${HOME}/.doliforge"
@@ -859,7 +859,7 @@ main() {
             echo ""
             echo -e "  ${BOLD}Commandes avancées${NC} (depuis ~/.doliforge/install.sh) :"
             echo "  install [tool] [path]   Installer sans menu interactif"
-            echo "                          tool: claude, cursor, codex, all"
+            echo "                          tool: claude, cursor, windsurf, cline, roocode, codex, all"
             echo "  uninstall [path]        Désinstaller d'un projet"
             echo "  update                  Mettre à jour depuis GitHub"
             echo "  status                  État de l'installation"
