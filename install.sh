@@ -59,41 +59,36 @@ detect_tool() {
     fi
 }
 
-ask_tool() {
+select_tool() {
+    # Affiche le menu et stocke le résultat dans la variable globale SELECTED_TOOL
+    # Appelée directement (pas dans $()) pour que echo et read fonctionnent normalement
     local detected="${1:-claude}"
-
-    if ! is_interactive; then
-        # Mode non-interactif (curl | bash) — auto-détection silencieuse
-        echo "$detected"
-        return
-    fi
 
     local labels=("Claude Code" "Cursor" "Codex (OpenAI)" "Tous les outils")
     local values=("claude" "cursor" "codex" "all")
     local default_idx=0
     case "$detected" in cursor) default_idx=1 ;; codex) default_idx=2 ;; esac
 
-    # Tout l'affichage sur stderr — stdout est capturé par $() pour récupérer la valeur
-    echo "" >&2
-    echo -e "  ${BOLD}Quel outil AI utilises-tu ?${NC}" >&2
+    echo ""
+    echo -e "  ${BOLD}Quel outil AI utilises-tu ?${NC}"
     for i in "${!labels[@]}"; do
         if [ "$i" -eq "$default_idx" ]; then
-            echo -e "  ${CYAN}›${NC} $((i+1))) ${labels[$i]}  ${DIM}(détecté)${NC}" >&2
+            echo -e "  ${CYAN}›${NC} $((i+1))) ${labels[$i]}  ${DIM}(détecté)${NC}"
         else
-            echo -e "     $((i+1))) ${labels[$i]}" >&2
+            echo -e "     $((i+1))) ${labels[$i]}"
         fi
     done
-    echo "" >&2
-    printf "  Choix [%d] : " "$((default_idx+1))" >&2
+    echo ""
+    printf "  Choix [%d] : " "$((default_idx+1))"
 
     local choice
-    read -r choice
+    read -r choice < /dev/tty   # Lire depuis le terminal, pas stdin
     choice="${choice:-$((default_idx+1))}"
 
     if [[ "$choice" =~ ^[1-4]$ ]]; then
-        echo "${values[$((choice-1))]}"
+        SELECTED_TOOL="${values[$((choice-1))]}"
     else
-        echo "${values[$default_idx]}"
+        SELECTED_TOOL="${values[$default_idx]}"
     fi
 }
 
@@ -557,12 +552,18 @@ main() {
                 log_info "Racine du projet : ${project_dir}"
             fi
 
-            # Choix de l'outil (interactif si stdin est un terminal)
+            # Choix de l'outil
             local tool
             if [ -n "${2:-}" ]; then
                 tool="$2"
+            elif is_interactive; then
+                SELECTED_TOOL=""
+                select_tool "$(detect_tool)"
+                tool="$SELECTED_TOOL"
             else
-                tool=$(ask_tool "$(detect_tool)")
+                # Mode non-interactif (curl | bash) — auto-détection silencieuse
+                tool=$(detect_tool)
+                log_info "Outil détecté : ${tool}"
             fi
 
             setup_project "$tool" "$project_dir"
