@@ -3,6 +3,129 @@
 Méthodologie systématique pour diagnostiquer et corriger les problèmes dans un
 module Dolibarr. Suivre dans l'ordre : symptôme → logs → isolation → correction.
 
+## RÈGLE ABSOLUE — interdiction des diagnostics paresseux
+
+Quand un développeur signale un bug (texte ou capture d'écran), il est **INTERDIT**
+d'avancer les explications suivantes :
+
+- **"Peut-être que le fichier déployé n'est pas la dernière version"** — un développeur
+  sait déployer ses fichiers, c'est le B.A.BA du métier. Ne jamais insinuer qu'il ne
+  l'a pas fait.
+- **"Peut-être que votre navigateur bloque la requête pour des raisons de sécurité"** —
+  si d'autres éléments de la page fonctionnent correctement, ce n'est pas le navigateur.
+  Cette explication est fausse dans 99% des cas.
+- **"Peut-être que le cache n'a pas été vidé"** — sauf si le développeur dit
+  explicitement ne pas l'avoir fait, ne pas ressortir ça comme première piste.
+- **Toute explication qui revient à dire que le développeur n'a pas fait son travail de
+  base** — c'est condescendant et contre-productif.
+
+Ces réponses sont **fausses, condescendantes et perdent du temps**. Le développeur est
+devant son environnement — il voit ce que tu ne vois pas. Lui faire confiance.
+
+**La bonne approche** : lire le code, les logs, la requête SQL ou le HTML rendu, et
+chercher la vraie cause dans les fichiers. Poser des questions précises si des
+informations manquent (contenu d'un fichier, sortie d'un log), mais jamais accuser
+l'environnement ou les gestes du développeur.
+
+---
+
+## Méthodologie : instrumenter avant de toucher
+
+Face à un bug, le premier réflexe n'est **PAS** de modifier du code. C'est de créer
+un point de debug visuel pour obtenir des données réelles.
+
+### Étape 1 — créer un point de debug visuel
+
+Choisir selon le contexte :
+
+- **Page de diagnostic** (`admin/diagnostic.php`) — pour les problèmes de configuration,
+  de tables, de constantes ou de permissions
+- **Bloc debug sur la page concernée** — ajouter temporairement une `<div>` qui affiche
+  les variables clés directement dans la page :
+  ```php
+  if ($user->admin) {
+      print '<div style="background:#ffe;border:1px solid #f90;padding:10px;margin:10px 0;">';
+      print '<strong>DEBUG</strong><pre>';
+      var_dump($maVariable);
+      print '</pre></div>';
+  }
+  ```
+- **`dol_syslog()` ciblés** — sur les variables et branchements suspects, à lire dans
+  le log en temps réel
+
+### Étape 2 — lire la sortie, identifier la vraie cause
+
+Lire ce que le debug retourne. La cause réelle est dans ces données — pas dans une
+théorie. Seulement après avoir lu la sortie, agir.
+
+### Étape 3 — corriger chirurgicalement
+
+Modifier **uniquement** le code identifié comme source du problème. Rien d'autre.
+
+### Ce qui est INTERDIT pendant un debug
+
+- Lancer des modifications en cascade pour "essayer des choses"
+- Itérer sur des hypothèses sans données concrètes
+- Toucher du code qui fonctionnait avant — c'est ainsi qu'on casse ce qui marchait
+- Réécrire une section entière alors qu'une seule ligne est en cause
+
+**Règle absolue : zéro modification de code sans preuve que c'est là que le bug
+se trouve.** Un bug non localisé se debug, il ne se corrige pas.
+
+---
+
+## Régression : utiliser git avant d'ouvrir un fichier
+
+Quand quelque chose qui fonctionnait ne fonctionne plus, `git` dit immédiatement ce
+qui a changé. C'est souvent plus rapide que n'importe quel debug.
+
+```bash
+# Voir les derniers commits sur un fichier précis
+git log --oneline -- htdocs/custom/monmodule/monfichier.php
+
+# Voir exactement ce qui a changé dans le dernier commit
+git diff HEAD~1 htdocs/custom/monmodule/monfichier.php
+
+# Voir tout ce qui a changé depuis un commit stable
+git diff abc1234 -- htdocs/custom/monmodule/
+```
+
+Si la régression est apparue après une modification connue, lire le diff avant toute
+autre action. La cause est souvent là.
+
+---
+
+## Un seul bug à la fois
+
+Ne jamais ouvrir deux fronts de debug simultanément. Si pendant le debug on découvre
+un autre problème, le **noter** et l'ignorer jusqu'à ce que le premier soit résolu.
+
+Travailler sur deux bugs en même temps aboutit systématiquement à :
+- deux bugs non résolus
+- du code modifié dans des zones non liées au problème initial
+- une impossibilité de savoir ce qui a causé quoi
+
+Terminer proprement le premier bug, commiter si possible, puis passer au suivant.
+
+---
+
+## Nettoyer les debug après correction
+
+Tout code de debug ajouté pendant l'investigation doit être **retiré dès le bug
+corrigé** :
+
+- Blocs `<div>` de debug dans les pages
+- `var_dump`, `print_r`, `die()` de diagnostic
+- `dol_syslog()` ajoutés en excès pour tracer l'exécution
+- Pages `diagnostic.php` temporaires
+
+Laisser du code debug en production est une faille de sécurité (exposition de données
+internes) et une source de confusion pour les interventions futures.
+
+**Règle** : un bug corrigé = code debug retiré = commit propre.
+
+---
+
 ## Principe : ne jamais deviner, toujours vérifier
 
 Avant de modifier du code, confirmer où le problème se produit réellement. Un

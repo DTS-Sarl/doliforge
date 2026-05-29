@@ -114,3 +114,7 @@ Charger uniquement la fiche pertinente au moment voulu :
 - `references/pieges.md` — pièges spécifiques à Dolibarr.
 - `references/dolistore-publication.md` — checklist de publication DoliStore.
 - `references/debug.md` — méthodologie de debug, `dol_syslog`, erreurs courantes.
+- `references/refactoring.md` — restructurer un module sans tout casser, extraction de classes, migrations SQL.
+- `references/performance.md` — requêtes lentes, N+1, index SQL, pagination, cache.
+- `references/tests.md` — page de test admin, fixtures SQL, checklist de recette avant livraison.
+- `references/api-rest.md` — consommer et exposer des endpoints REST Dolibarr.

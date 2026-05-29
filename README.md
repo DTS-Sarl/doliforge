@@ -1,35 +1,26 @@
 # DoliForge
 
-La forge a modules Dolibarr de **DTS SARL** (Dywants Technologie & Services) :
+La forge IA de **DTS SARL** (Dywants Technologie & Services) :
 skills, agents et fiches de reference pour developper et auditer des modules
-Dolibarr 18-23 avec les outils de coding IA.
+Dolibarr 18-23 avec Claude Code, Cursor, Codex ou tout outil de coding IA.
 
 **Outils supportes** : Claude Code, Cursor, Codex (OpenAI), et tout outil
 supportant les fichiers d'instructions projet.
 
-## Installation rapide
+## Installation
 
-Une seule commande, depuis n'importe quel projet Dolibarr :
+Depuis n'importe quel projet Dolibarr, une seule commande :
 
 ```bash
-# Claude Code (defaut)
-curl -fsSL https://raw.githubusercontent.com/DTS-Sarl/doliforge/main/install.sh | bash -s install
-
-# Cursor
-curl -fsSL https://raw.githubusercontent.com/DTS-Sarl/doliforge/main/install.sh | bash -s install cursor
-
-# Codex (OpenAI)
-curl -fsSL https://raw.githubusercontent.com/DTS-Sarl/doliforge/main/install.sh | bash -s install codex
-
-# Tous les outils d'un coup
-curl -fsSL https://raw.githubusercontent.com/DTS-Sarl/doliforge/main/install.sh | bash -s install all
+curl -fsSL https://raw.githubusercontent.com/DTS-Sarl/doliforge/main/install.sh | bash
 ```
 
 Le script :
 1. **Telecharge DoliForge** dans `~/.doliforge/` (clone GitHub automatique)
-2. **Configure le projet courant** (skills, commands, instructions)
+2. **Detecte automatiquement** l'outil AI utilise (Claude Code, Cursor, Codex)
+3. **Configure le projet courant** en consequence
 
-Pas besoin de cloner manuellement. Pas besoin de telecharger quoi que ce soit.
+Pas besoin de cloner manuellement. Pas besoin de passer d'arguments.
 
 ### Que fait l'installation ?
 

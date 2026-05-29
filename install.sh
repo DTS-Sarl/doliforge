@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # ============================================================================
-# DoliForge — Installateur de skills et agents Dolibarr pour AI Coding Tools
+# DoliForge — Forge IA pour le développement de modules Dolibarr
 # DTS SARL (Dywants Technologie & Services)
 # ============================================================================
 set -euo pipefail
 
-DOLIFORGE_VERSION="1.1.0"
+DOLIFORGE_VERSION="1.2.0"
 DOLIFORGE_REPO="DTS-Sarl/doliforge"
 DOLIFORGE_BRANCH="main"
 DOLIFORGE_DIR="${HOME}/.doliforge"
@@ -15,119 +15,117 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
+DIM='\033[2m'
 NC='\033[0m'
 
 print_banner() {
     echo ""
-    echo -e "${BLUE}╔══════════════════════════════════════════════════╗${NC}"
-    echo -e "${BLUE}║${NC}  ${GREEN}DoliForge v${DOLIFORGE_VERSION}${NC}                                 ${BLUE}║${NC}"
-    echo -e "${BLUE}║${NC}  Skills & agents Dolibarr pour AI Coding Tools   ${BLUE}║${NC}"
-    echo -e "${BLUE}║${NC}  DTS SARL — dywants.com                          ${BLUE}║${NC}"
-    echo -e "${BLUE}╚══════════════════════════════════════════════════╝${NC}"
+    echo -e "${BLUE}${BOLD}"
+    echo "  ██████╗  ██████╗ ██╗     ██╗███████╗ ██████╗ ██████╗  ██████╗ ███████╗"
+    echo "  ██╔══██╗██╔═══██╗██║     ██║██╔════╝██╔═══██╗██╔══██╗██╔════╝ ██╔════╝"
+    echo "  ██║  ██║██║   ██║██║     ██║█████╗  ██║   ██║██████╔╝██║  ███╗█████╗  "
+    echo "  ██║  ██║██║   ██║██║     ██║██╔══╝  ██║   ██║██╔══██╗██║   ██║██╔══╝  "
+    echo "  ██████╔╝╚██████╔╝███████╗██║██║     ╚██████╔╝██║  ██║╚██████╔╝███████╗"
+    echo "  ╚═════╝  ╚═════╝ ╚══════╝╚═╝╚═╝      ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚══════╝"
+    echo -e "${NC}"
+    echo -e "  ${DIM}Forge IA pour le développement de modules Dolibarr${NC}"
+    echo -e "  ${DIM}DTS SARL — v${DOLIFORGE_VERSION}${NC}"
     echo ""
 }
 
-log_info()    { echo -e "${GREEN}[OK]${NC} $1"; }
-log_warn()    { echo -e "${YELLOW}[!!]${NC} $1"; }
-log_error()   { echo -e "${RED}[ERR]${NC} $1"; }
-log_step()    { echo -e "${BLUE}[>>]${NC} $1"; }
+log_info()    { echo -e "  ${GREEN}✓${NC}  $1"; }
+log_warn()    { echo -e "  ${YELLOW}!${NC}  $1"; }
+log_error()   { echo -e "  ${RED}✗${NC}  $1"; }
+log_step()    { echo -e "\n  ${CYAN}›${NC}  ${BOLD}$1${NC}"; }
 
 # ============================================================================
-# Etape 1 : Telecharger ou mettre a jour DoliForge
+# Détection automatique de l'outil AI
+# ============================================================================
+detect_tool() {
+    if [ -n "${1:-}" ]; then
+        echo "$1" ; return
+    fi
+
+    if command -v claude &> /dev/null; then
+        echo "claude"
+    elif [ -d ".cursor" ] || [ -f ".cursorrules" ]; then
+        echo "cursor"
+    elif [ -f "codex.yaml" ] || [ -f ".codex" ] || [ -f "AGENTS.md" ]; then
+        echo "codex"
+    else
+        echo "claude"  # Défaut
+    fi
+}
+
+# ============================================================================
+# Télécharger ou mettre à jour DoliForge
 # ============================================================================
 install_doliforge() {
-    log_step "Installation de DoliForge dans ${DOLIFORGE_DIR}..."
+    log_step "Installation de DoliForge dans ${DOLIFORGE_DIR}"
 
     if [ -d "${DOLIFORGE_DIR}/.git" ]; then
-        log_info "DoliForge deja installe, mise a jour..."
+        log_info "DoliForge déjà installé — mise à jour..."
         cd "${DOLIFORGE_DIR}"
-        git pull origin "${DOLIFORGE_BRANCH}" --quiet 2>/dev/null || {
+        git pull origin "${DOLIFORGE_BRANCH}" --quiet 2>/dev/null || \
             log_warn "Impossible de pull — utilisation de la version locale"
-        }
         cd - > /dev/null
     elif [ -d "${DOLIFORGE_DIR}" ]; then
-        log_warn "Dossier ${DOLIFORGE_DIR} existe sans git — reinstallation..."
+        log_warn "Dossier existant sans git — réinstallation..."
         rm -rf "${DOLIFORGE_DIR}"
         git clone --depth 1 --branch "${DOLIFORGE_BRANCH}" \
-            "https://github.com/${DOLIFORGE_REPO}.git" "${DOLIFORGE_DIR}" 2>/dev/null || {
-            log_error "Clone GitHub echoue. Installation depuis source locale..."
-            install_from_local
-            return
+            "https://github.com/${DOLIFORGE_REPO}.git" "${DOLIFORGE_DIR}" --quiet 2>/dev/null || {
+            install_from_local ; return
         }
     else
         git clone --depth 1 --branch "${DOLIFORGE_BRANCH}" \
-            "https://github.com/${DOLIFORGE_REPO}.git" "${DOLIFORGE_DIR}" 2>/dev/null || {
-            log_error "Clone GitHub echoue. Installation depuis source locale..."
-            install_from_local
-            return
+            "https://github.com/${DOLIFORGE_REPO}.git" "${DOLIFORGE_DIR}" --quiet 2>/dev/null || {
+            install_from_local ; return
         }
     fi
 
-    log_info "DoliForge v${DOLIFORGE_VERSION} installe dans ${DOLIFORGE_DIR}"
+    log_info "DoliForge v${DOLIFORGE_VERSION} prêt dans ${DOLIFORGE_DIR}"
 }
 
 install_from_local() {
-    # Fallback : copier depuis le repertoire courant (si execute depuis le repo)
     SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     if [ -f "${SCRIPT_DIR}/dolibarr/skills/dolibarr-module-dev/SKILL.md" ]; then
         mkdir -p "${DOLIFORGE_DIR}"
         cp -R "${SCRIPT_DIR}/"* "${DOLIFORGE_DIR}/" 2>/dev/null || true
         cp -R "${SCRIPT_DIR}/."* "${DOLIFORGE_DIR}/" 2>/dev/null || true
-        log_info "Installe depuis source locale"
+        log_info "Installé depuis source locale"
     else
-        log_error "Aucune source trouvee. Cloner manuellement :"
-        echo "  git clone https://github.com/${DOLIFORGE_REPO}.git ${DOLIFORGE_DIR}"
+        log_error "Aucune source trouvée. Cloner manuellement :"
+        echo ""
+        echo "    git clone https://github.com/${DOLIFORGE_REPO}.git ${DOLIFORGE_DIR}"
+        echo ""
         exit 1
     fi
 }
 
 # ============================================================================
-# Etape 2 : Detecter l'outil AI et configurer
-# ============================================================================
-detect_tool() {
-    local tool=""
-
-    if [ -n "${1:-}" ]; then
-        tool="$1"
-    elif command -v claude &> /dev/null; then
-        tool="claude"
-    elif [ -d ".cursor" ] || [ -f ".cursorrules" ]; then
-        tool="cursor"
-    elif [ -f "codex.yaml" ] || [ -f ".codex" ]; then
-        tool="codex"
-    else
-        tool="claude"  # Defaut
-    fi
-
-    echo "$tool"
-}
-
-# ============================================================================
-# Etape 3 : Installer les skills dans le projet courant
+# Configurer le projet courant selon l'outil choisi
 # ============================================================================
 setup_project() {
     local tool="${1:-claude}"
     local project_dir="${2:-.}"
+    local project_name
+    project_name="$(basename "$(cd "$project_dir" && pwd)")"
 
-    log_step "Configuration du projet $(basename "$(cd "$project_dir" && pwd)") pour ${tool}..."
+    log_step "Configuration de ${project_name} pour ${tool}"
 
     case "$tool" in
-        claude)
-            setup_claude_code "$project_dir"
-            ;;
-        cursor)
-            setup_cursor "$project_dir"
-            ;;
-        codex)
-            setup_codex "$project_dir"
-            ;;
+        claude) setup_claude_code "$project_dir" ;;
+        cursor) setup_cursor "$project_dir" ;;
+        codex)  setup_codex "$project_dir" ;;
         all)
             setup_claude_code "$project_dir"
             setup_cursor "$project_dir"
             setup_codex "$project_dir"
             ;;
         *)
-            log_error "Outil inconnu : ${tool}. Utiliser: claude, cursor, codex, all"
+            log_error "Outil inconnu : ${tool}"
             exit 1
             ;;
     esac
@@ -137,30 +135,25 @@ setup_project() {
 setup_claude_code() {
     local project_dir="$1"
 
-    # 1. Skills
     mkdir -p "${project_dir}/.claude/skills"
-    if [ -L "${project_dir}/.claude/skills/dolibarr-module-dev" ]; then
+    [ -L "${project_dir}/.claude/skills/dolibarr-module-dev" ] && \
         rm "${project_dir}/.claude/skills/dolibarr-module-dev"
-    fi
     ln -sf "${DOLIFORGE_DIR}/dolibarr/skills/dolibarr-module-dev" \
            "${project_dir}/.claude/skills/dolibarr-module-dev"
-    log_info "Skill dolibarr-module-dev installe (symlink)"
+    log_info "Skill dolibarr-module-dev installé (symlink)"
 
-    # 2. Slash commands
     mkdir -p "${project_dir}/.claude/commands"
     create_claude_commands "${project_dir}"
-    log_info "Slash commands creees (/dolibarr-audit, /dolibarr-create, /dolibarr-debug)"
+    log_info "Slash commands créées"
 
-    # 3. CLAUDE.md — ajouter la section DoliForge si absente
     inject_claude_md "${project_dir}"
-    log_info "CLAUDE.md configure"
+    log_info "CLAUDE.md configuré"
 }
 
 create_claude_commands() {
     local project_dir="$1"
     local cmd_dir="${project_dir}/.claude/commands"
 
-    # /dolibarr-audit — Auditer un module
     cat > "${cmd_dir}/dolibarr-audit.md" << 'CMDEOF'
 ---
 description: Auditer un module Dolibarr (securite, compatibilite, conventions)
@@ -184,7 +177,6 @@ Pour chaque probleme trouve :
 Argument optionnel : $ARGUMENTS (chemin du module ou fichier a auditer)
 CMDEOF
 
-    # /dolibarr-create — Creer un module
     cat > "${cmd_dir}/dolibarr-create.md" << 'CMDEOF'
 ---
 description: Creer un nouveau module Dolibarr depuis zero
@@ -207,7 +199,6 @@ avant de commencer.
 Argument optionnel : $ARGUMENTS (nom du module a creer)
 CMDEOF
 
-    # /dolibarr-debug — Debugger un probleme
     cat > "${cmd_dir}/dolibarr-debug.md" << 'CMDEOF'
 ---
 description: Diagnostiquer un probleme dans un module Dolibarr
@@ -218,17 +209,17 @@ decrite dans `references/debug.md`.
 
 Procedure :
 1. Identifier le symptome (erreur 500, 403, page blanche, trigger inactif, etc.)
-2. Consulter les logs
-3. Isoler la cause avec la checklist appropriee
-4. Proposer le correctif
+2. Creer un point de debug visuel pour obtenir des donnees reelles
+3. Lire la sortie et isoler la cause
+4. Corriger chirurgicalement — ne toucher que le code identifie comme source du bug
 
-Ne jamais deviner — toujours verifier. Suivre la checklist de debug rapide :
-logs → cache → permissions → CSRF → SQL → chemin → version.
+Ne jamais avancer des theories sans donnees. Ne jamais modifier du code
+qui fonctionnait. Ne jamais insinuer que le developpeur n'a pas deploye
+ses fichiers ou que le navigateur bloque.
 
 Argument optionnel : $ARGUMENTS (description du probleme)
 CMDEOF
 
-    # /dolibarr-publish — Preparer pour DoliStore
     cat > "${cmd_dir}/dolibarr-publish.md" << 'CMDEOF'
 ---
 description: Preparer un module pour publication sur DoliStore
@@ -252,30 +243,27 @@ inject_claude_md() {
     local claude_md="${project_dir}/CLAUDE.md"
     local marker="<!-- DOLIFORGE -->"
 
-    # Verifier si deja injecte
     if [ -f "$claude_md" ] && grep -q "$marker" "$claude_md" 2>/dev/null; then
-        log_warn "CLAUDE.md contient deja la section DoliForge — pas de modification"
+        log_warn "CLAUDE.md contient déjà DoliForge — ignoré"
         return
     fi
 
-    # Creer ou appendre
-    local section
-    section=$(cat << 'SECTIONEOF'
+    cat >> "$claude_md" << 'SECTIONEOF'
 
 <!-- DOLIFORGE -->
 ## DoliForge — Skills Dolibarr
 
-Ce projet utilise **DoliForge**, la forge a modules Dolibarr de DTS SARL.
-Les skills et fiches de reference sont charges automatiquement via
+Ce projet utilise **DoliForge**, la forge IA de DTS SARL pour le développement
+de modules Dolibarr. Les skills et fiches de référence sont chargés via
 `.claude/skills/dolibarr-module-dev/`.
 
-### Regles imposees par DoliForge
+### Règles imposées par DoliForge
 
 Quand tu travailles sur du code de module Dolibarr, **toujours** consulter
-les fiches de reference appropriees du skill `dolibarr-module-dev` :
+les fiches de référence appropriées du skill `dolibarr-module-dev` :
 
 - Nouveau code → lire la fiche correspondante (structure, descripteur, objets, etc.)
-- Correction de bug → lire `references/debug.md` pour la methodologie
+- Correction de bug → lire `references/debug.md` pour la méthodologie
 - Audit / review → lire `references/securite.md` + `references/conventions-code.md`
 - Publication → lire `references/dolistore-publication.md`
 
@@ -283,282 +271,245 @@ les fiches de reference appropriees du skill `dolibarr-module-dev` :
 
 | Commande | Usage |
 |---|---|
-| `/dolibarr-audit` | Auditer un module (securite, compatibilite, conventions) |
-| `/dolibarr-create` | Creer un nouveau module depuis zero |
-| `/dolibarr-debug` | Diagnostiquer un probleme |
-| `/dolibarr-publish` | Preparer pour publication DoliStore |
+| `/dolibarr-audit` | Auditer un module (sécurité, compatibilité, conventions) |
+| `/dolibarr-create` | Créer un nouveau module depuis zéro |
+| `/dolibarr-debug` | Diagnostiquer un problème |
+| `/dolibarr-publish` | Préparer pour publication DoliStore |
 <!-- /DOLIFORGE -->
 SECTIONEOF
-    )
-
-    if [ -f "$claude_md" ]; then
-        echo "$section" >> "$claude_md"
-    else
-        echo "$section" > "$claude_md"
-    fi
 }
 
 # ---- Cursor ----
 setup_cursor() {
     local project_dir="$1"
-
-    # .cursorrules — equivalent de CLAUDE.md pour Cursor
     local rules_file="${project_dir}/.cursorrules"
-    local marker="# DOLIFORGE"
 
-    if [ -f "$rules_file" ] && grep -q "$marker" "$rules_file" 2>/dev/null; then
-        log_warn ".cursorrules contient deja DoliForge"
+    if [ -f "$rules_file" ] && grep -q "# DOLIFORGE" "$rules_file" 2>/dev/null; then
+        log_warn ".cursorrules contient déjà DoliForge — ignoré"
         return
     fi
 
     cat >> "$rules_file" << 'CURSOREOF'
 
-# DOLIFORGE — Regles de developpement Dolibarr
-# Genere par DoliForge (DTS SARL) — ne pas modifier manuellement
+# DOLIFORGE — Règles de développement Dolibarr
+# Généré par DoliForge (DTS SARL) — ne pas modifier manuellement
 
-Quand tu travailles sur un module Dolibarr, respecte ces regles :
+Quand tu travailles sur un module Dolibarr, respecte ces règles :
 
-## Securite obligatoire
-- Toute entree via GETPOST('nom', 'type') — jamais $_GET/$_POST
+## Sécurité obligatoire
+- Toute entrée via GETPOST('nom', 'type') — jamais $_GET/$_POST
 - Jeton CSRF newToken() sur tout formulaire POST
-- Echappement SQL : $db->escape() pour chaines, (int) pour entiers
+- Échappement SQL : $db->escape() pour chaînes, (int) pour entiers
 - Permissions : hasRight() + restrictedArea() avant tout traitement
 - Sortie : dol_escape_htmltag() sur contenu dynamique
 
 ## Structure
 - Module dans htdocs/custom/<module>/
 - Descripteur : core/modules/modXxx.class.php extends DolibarrModules
-- Classes metier : extends CommonObject avec pattern $fields
+- Classes métier : extends CommonObject avec pattern $fields
 - Pages : llxHeader()/llxFooter(), setEventMessages()
 - SQL : MAIN_DB_PREFIX en PHP, llx_ dans fichiers .sql
-- Entity obligatoire pour multi-societe
+- Entity obligatoire pour multi-société
 
 ## Conventions
 - Globales : global $db, $conf, $user, $langs;
-- Retours : > 0 succes, 0 neutre, < 0 erreur (jamais booleens)
+- Retours : > 0 succès, 0 neutre, < 0 erreur (jamais booléens)
 - Helpers : dol_syslog(), dol_now(), dol_print_date(), dol_buildpath()
 - Transactions : $db->begin() / commit() / rollback()
 - Traductions : $langs->trans() — jamais texte en dur
 - Indentation : tabulations (pas espaces)
 
 ## Pages AJAX
-- Declarer NOCSRFCHECK, NOTOKENRENEWAL, NOREQUIREMENU AVANT main.inc.php
-- Toujours verifier hasRight() meme en AJAX
+- Déclarer NOCSRFCHECK, NOTOKENRENEWAL, NOREQUIREMENU AVANT main.inc.php
+- Toujours vérifier hasRight() même en AJAX
 - Retourner JSON via top_httphead('application/json') + json_encode()
 
 ## Triggers
-- Toujours if (!isModEnabled('monmodule')) return 0; en debut
+- Toujours if (!isModEnabled('monmodule')) return 0; en début
 - try/catch non-bloquant, jamais re-throw
 - Retourner 0 (non-bloquant) sauf cas critique
 
-## References detaillees
-Les fiches completes sont dans ~/.doliforge/dolibarr/skills/dolibarr-module-dev/references/
+## Références détaillées
+Les fiches complètes sont dans ~/.doliforge/dolibarr/skills/dolibarr-module-dev/references/
 # /DOLIFORGE
 CURSOREOF
 
-    log_info ".cursorrules configure pour Cursor"
+    log_info ".cursorrules configuré pour Cursor"
 }
 
 # ---- Codex (OpenAI) ----
 setup_codex() {
     local project_dir="$1"
-
     local codex_file="${project_dir}/AGENTS.md"
-    local marker="<!-- DOLIFORGE -->"
 
-    if [ -f "$codex_file" ] && grep -q "$marker" "$codex_file" 2>/dev/null; then
-        log_warn "AGENTS.md contient deja DoliForge"
+    if [ -f "$codex_file" ] && grep -q "<!-- DOLIFORGE -->" "$codex_file" 2>/dev/null; then
+        log_warn "AGENTS.md contient déjà DoliForge — ignoré"
         return
     fi
 
-    # Codex utilise AGENTS.md comme instructions
     cat >> "$codex_file" << 'CODEXEOF'
 
 <!-- DOLIFORGE -->
-## DoliForge — Regles Dolibarr
+## DoliForge — Règles Dolibarr
 
 Quand tu travailles sur un module Dolibarr :
 
-1. **Securite** : GETPOST() avec filtre, newToken() CSRF, $db->escape(),
+1. **Sécurité** : GETPOST() avec filtre, newToken() CSRF, $db->escape(),
    hasRight()/restrictedArea(), dol_escape_htmltag()
 2. **Structure** : htdocs/custom/, CommonObject + $fields, MAIN_DB_PREFIX,
    entity obligatoire, llxHeader()/llxFooter()
 3. **Conventions** : global $db,$conf,$user,$langs; retours >0/0/<0;
    dol_syslog(); $langs->trans(); tabulations
-4. **Triggers** : isModEnabled() en debut, try/catch non-bloquant
+4. **Triggers** : isModEnabled() en début, try/catch non-bloquant
 5. **AJAX** : NOCSRFCHECK avant main.inc.php, hasRight() toujours
 
-References detaillees : ~/.doliforge/dolibarr/skills/dolibarr-module-dev/references/
+Références détaillées : ~/.doliforge/dolibarr/skills/dolibarr-module-dev/references/
 <!-- /DOLIFORGE -->
 CODEXEOF
 
-    log_info "AGENTS.md configure pour Codex"
+    log_info "AGENTS.md configuré pour Codex"
 }
 
 # ============================================================================
-# Etape 4 : Desinstallation
+# Désinstallation
 # ============================================================================
 uninstall_project() {
     local project_dir="${1:-.}"
 
-    log_step "Desinstallation de DoliForge du projet..."
+    log_step "Désinstallation de DoliForge du projet"
 
-    # Supprimer le symlink skill
     rm -f "${project_dir}/.claude/skills/dolibarr-module-dev"
-    log_info "Skill symlink supprime"
+    log_info "Symlink skill supprimé"
 
-    # Supprimer les commands
     rm -f "${project_dir}/.claude/commands/dolibarr-audit.md"
     rm -f "${project_dir}/.claude/commands/dolibarr-create.md"
     rm -f "${project_dir}/.claude/commands/dolibarr-debug.md"
     rm -f "${project_dir}/.claude/commands/dolibarr-publish.md"
-    log_info "Slash commands supprimees"
+    log_info "Slash commands supprimées"
 
-    # Nettoyer CLAUDE.md
     if [ -f "${project_dir}/CLAUDE.md" ]; then
         sed -i.bak '/<!-- DOLIFORGE -->/,/<!-- \/DOLIFORGE -->/d' "${project_dir}/CLAUDE.md"
         rm -f "${project_dir}/CLAUDE.md.bak"
-        log_info "Section DoliForge retiree de CLAUDE.md"
+        log_info "Section DoliForge retirée de CLAUDE.md"
     fi
 
-    # Nettoyer .cursorrules
     if [ -f "${project_dir}/.cursorrules" ]; then
         sed -i.bak '/# DOLIFORGE/,/# \/DOLIFORGE/d' "${project_dir}/.cursorrules"
         rm -f "${project_dir}/.cursorrules.bak"
-        log_info "Section DoliForge retiree de .cursorrules"
+        log_info "Section DoliForge retirée de .cursorrules"
     fi
 
-    # Nettoyer AGENTS.md
     if [ -f "${project_dir}/AGENTS.md" ]; then
         sed -i.bak '/<!-- DOLIFORGE -->/,/<!-- \/DOLIFORGE -->/d' "${project_dir}/AGENTS.md"
         rm -f "${project_dir}/AGENTS.md.bak"
-        log_info "Section DoliForge retiree de AGENTS.md"
+        log_info "Section DoliForge retirée de AGENTS.md"
     fi
 
-    log_info "Desinstallation terminee"
+    echo ""
+    log_info "Désinstallation terminée"
 }
 
 # ============================================================================
-# Etape 5 : Mise a jour
+# Mise à jour
 # ============================================================================
 update_doliforge() {
-    log_step "Mise a jour de DoliForge..."
+    log_step "Mise à jour de DoliForge depuis GitHub"
 
     if [ -d "${DOLIFORGE_DIR}/.git" ]; then
         cd "${DOLIFORGE_DIR}"
         git pull origin "${DOLIFORGE_BRANCH}" --quiet
         cd - > /dev/null
-        log_info "DoliForge mis a jour depuis GitHub"
+        log_info "DoliForge mis à jour"
     else
-        log_warn "DoliForge non installe via git — reinstallation..."
+        log_warn "Non installé via git — réinstallation..."
         rm -rf "${DOLIFORGE_DIR}"
         install_doliforge
     fi
 
     echo ""
-    log_info "Les projets utilisant des symlinks sont automatiquement a jour."
+    log_info "Les projets utilisant des symlinks sont automatiquement à jour."
 }
 
 # ============================================================================
-# Aide
+# Statut
 # ============================================================================
-show_help() {
-    print_banner
-    echo "Usage: $(basename "$0") <commande> [options]"
-    echo ""
-    echo "Commandes :"
-    echo "  install [tool] [path]   Installer DoliForge + configurer un projet"
-    echo "                          tool: claude (defaut), cursor, codex, all"
-    echo "                          path: chemin du projet (defaut: .)"
-    echo "  uninstall [path]        Desinstaller DoliForge d'un projet"
-    echo "  update                  Mettre a jour DoliForge depuis GitHub"
-    echo "  status                  Afficher l'etat de l'installation"
-    echo "  help                    Afficher cette aide"
-    echo ""
-    echo "Exemples :"
-    echo "  $(basename "$0") install                    # Claude Code, projet courant"
-    echo "  $(basename "$0") install cursor             # Cursor, projet courant"
-    echo "  $(basename "$0") install all ./mon-module   # Tous les outils, chemin specifie"
-    echo "  $(basename "$0") update                     # Mettre a jour les skills"
-    echo "  $(basename "$0") uninstall                  # Retirer du projet courant"
-    echo ""
-    echo "Apres installation, commandes disponibles dans Claude Code :"
-    echo "  /dolibarr-audit      Auditer un module (securite, compat, conventions)"
-    echo "  /dolibarr-create     Creer un nouveau module Dolibarr"
-    echo "  /dolibarr-debug      Diagnostiquer un probleme"
-    echo "  /dolibarr-publish    Preparer pour publication DoliStore"
-}
-
 show_status() {
     print_banner
 
-    echo "Installation globale :"
+    echo -e "  ${BOLD}Installation globale${NC}"
     if [ -d "${DOLIFORGE_DIR}" ]; then
-        log_info "DoliForge installe dans ${DOLIFORGE_DIR}"
+        log_info "DoliForge installé dans ${DOLIFORGE_DIR}"
         if [ -d "${DOLIFORGE_DIR}/.git" ]; then
             local version
-            version=$(cd "${DOLIFORGE_DIR}" && git log -1 --format="%h %s" 2>/dev/null || echo "inconnu")
-            echo "    Dernier commit : ${version}"
+            version=$(cd "${DOLIFORGE_DIR}" && git log -1 --format="%h — %s" 2>/dev/null || echo "inconnu")
+            echo -e "  ${DIM}    commit : ${version}${NC}"
         fi
     else
-        log_error "DoliForge non installe"
+        log_error "DoliForge non installé"
     fi
 
     echo ""
-    echo "Projet courant ($(pwd)) :"
+    echo -e "  ${BOLD}Projet courant${NC} ${DIM}($(pwd))${NC}"
 
     if [ -L ".claude/skills/dolibarr-module-dev" ]; then
-        log_info "Skill Claude Code : actif"
+        log_info "Skill Claude Code    actif"
     else
-        log_warn "Skill Claude Code : non configure"
+        log_warn "Skill Claude Code    non configuré"
     fi
 
     if [ -f ".claude/commands/dolibarr-audit.md" ]; then
-        log_info "Slash commands  : installees"
+        log_info "Slash commands       installées"
     else
-        log_warn "Slash commands  : non installees"
+        log_warn "Slash commands       non installées"
     fi
 
     if [ -f "CLAUDE.md" ] && grep -q "DOLIFORGE" "CLAUDE.md" 2>/dev/null; then
-        log_info "CLAUDE.md       : configure"
+        log_info "CLAUDE.md            configuré"
     else
-        log_warn "CLAUDE.md       : non configure"
+        log_warn "CLAUDE.md            non configuré"
     fi
 
     if [ -f ".cursorrules" ] && grep -q "DOLIFORGE" ".cursorrules" 2>/dev/null; then
-        log_info ".cursorrules    : configure"
+        log_info ".cursorrules         configuré"
     else
-        echo "    .cursorrules    : non configure (optionnel)"
+        echo -e "  ${DIM}—  .cursorrules         non configuré (optionnel)${NC}"
     fi
 
     if [ -f "AGENTS.md" ] && grep -q "DOLIFORGE" "AGENTS.md" 2>/dev/null; then
-        log_info "AGENTS.md       : configure"
+        log_info "AGENTS.md            configuré"
     else
-        echo "    AGENTS.md       : non configure (optionnel)"
+        echo -e "  ${DIM}—  AGENTS.md            non configuré (optionnel)${NC}"
     fi
+
+    echo ""
 }
 
 # ============================================================================
 # Main
 # ============================================================================
 main() {
-    local command="${1:-help}"
+    local command="${1:-install}"
 
     case "$command" in
         install)
             print_banner
             install_doliforge
+
             local tool
             tool=$(detect_tool "${2:-}")
+            log_info "Outil détecté : ${tool}"
+
             setup_project "$tool" "${3:-.}"
+
             echo ""
-            log_info "Installation terminee !"
+            echo -e "  ${GREEN}${BOLD}DoliForge installé !${NC}"
             echo ""
-            echo "Commandes disponibles :"
-            echo "  /dolibarr-audit    — Auditer un module"
-            echo "  /dolibarr-create   — Creer un module"
-            echo "  /dolibarr-debug    — Debugger un probleme"
-            echo "  /dolibarr-publish  — Publier sur DoliStore"
+            echo -e "  ${DIM}Commandes disponibles dans ton outil AI :${NC}"
+            echo -e "  ${CYAN}/dolibarr-audit${NC}    — Auditer un module"
+            echo -e "  ${CYAN}/dolibarr-create${NC}   — Créer un module"
+            echo -e "  ${CYAN}/dolibarr-debug${NC}    — Débugger un problème"
+            echo -e "  ${CYAN}/dolibarr-publish${NC}  — Publier sur DoliStore"
+            echo ""
             ;;
         uninstall)
             print_banner
@@ -572,11 +523,20 @@ main() {
             show_status
             ;;
         help|--help|-h)
-            show_help
+            print_banner
+            echo "  Usage : bash <(curl -fsSL https://raw.githubusercontent.com/${DOLIFORGE_REPO}/${DOLIFORGE_BRANCH}/install.sh)"
+            echo ""
+            echo -e "  ${BOLD}Commandes avancées${NC} (depuis ~/.doliforge/install.sh) :"
+            echo "  install [tool] [path]   Installer sans menu interactif"
+            echo "                          tool: claude, cursor, codex, all"
+            echo "  uninstall [path]        Désinstaller d'un projet"
+            echo "  update                  Mettre à jour depuis GitHub"
+            echo "  status                  État de l'installation"
+            echo ""
             ;;
         *)
             log_error "Commande inconnue : ${command}"
-            show_help
+            echo "  Utilise : ~/.doliforge/install.sh help"
             exit 1
             ;;
     esac
