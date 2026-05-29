@@ -2,6 +2,71 @@
 
 Bonnes pratiques pour des styles cohérents, maintenables et sans duplication.
 
+## Principe fondamental — continuité visuelle avec Dolibarr
+
+Un module bien fait donne l'impression d'être **natif à Dolibarr**. L'utilisateur
+ne doit pas ressentir de rupture de style en passant d'un module natif à ton module.
+
+### Design : moderne, sobre, épuré — mais dans les codes Dolibarr
+
+Objectif : **améliorer** l'interface sans la dénaturer. Un module peut être plus
+propre, plus aéré, mieux structuré que les pages par défaut — tout en restant
+visuellement cohérent avec l'écosystème.
+
+**Ce qu'on cherche :**
+
+- Mise en page aérée, hiérarchie visuelle claire
+- Composants propres (cartes, badges, boutons) avec formes sobres
+- Typographie lisible, espacement généreux
+
+**Ce qu'on interdit :**
+
+- Recréer une charte graphique indépendante de Dolibarr
+- Utiliser des couleurs de liens différentes de celles de Dolibarr
+- Déplacer les éléments de navigation hors de leur position native
+
+### Respecter les conventions natives de positionnement
+
+Dolibarr impose une position attendue pour certains éléments — la respecter
+**sans exception** :
+
+| Élément | Position native Dolibarr | Règle |
+| --- | --- | --- |
+| Lien retour à la liste | Barre d'actions en haut, extrémité gauche | Toujours à cette position |
+| Bouton "Créer" | Barre d'actions en haut, à droite | Toujours à cette position |
+| Onglets d'objet (`tabs`) | Juste sous le titre de la fiche | Utiliser `dol_get_fiche_head()` |
+| Boutons d'action (Valider, Supprimer…) | Barre `<div class="tabsAction">` | Utiliser `dolGetButtonAction()` |
+| Messages d'alerte / succès | Via `setEventMessages()` | Jamais de zone custom |
+
+```php
+// Retour à la liste — toujours en première position dans la barre d'actions
+print '<div class="tabsAction">';
+print dolGetButtonAction('', $langs->trans('BackToList'), 'default', DOL_URL_ROOT.'/mymodule/list.php', '');
+// ... autres boutons
+print '</div>';
+```
+
+### Couleurs et liens — hériter de Dolibarr, ne pas surcharger
+
+Ne jamais redéfinir la couleur des liens `<a>` globalement — utiliser les classes
+CSS natives de Dolibarr :
+
+```css
+/* INTERDIT — surcharge des liens natifs */
+a { color: #e74c3c; }
+a:hover { color: #c0392b; }
+
+/* CORRECT — laisser Dolibarr gérer ses propres liens */
+/* Définir uniquement les liens à l'intérieur des composants du module */
+.monmodule-card a { color: inherit; }
+```
+
+Pour les éléments visuels spécifiques au module (badges, cartes, boutons
+d'action custom), utiliser les variables du module — pas les couleurs
+globales Dolibarr.
+
+---
+
 ## RÈGLE ABSOLUE — jamais de dégradés CSS
 
 Il est **INTERDIT** d'utiliser des dégradés CSS dans un module Dolibarr :
