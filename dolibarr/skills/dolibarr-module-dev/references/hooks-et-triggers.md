@@ -260,3 +260,146 @@ Quand préférer un hook/table séparée plutôt qu'un extrafield :
 | `USER_CREATE` / `USER_MODIFY` / `USER_DELETE` | Utilisateur |
 | `FICHINTER_CREATE` / `FICHINTER_VALIDATE` | Intervention |
 | `ACTION_CREATE` / `ACTION_MODIFY` | Événement agenda |
+
+---
+
+## Exemple complet — ajouter un onglet sur la fiche tiers
+
+**Descripteur** :
+```php
+$this->module_parts['hooks'] = ['thirdpartycard'];
+```
+
+**`class/actions_monmodule.class.php`** :
+```php
+public function completeTabsHead(&$parameters, &$object, &$action, $hookmanager)
+{
+    global $langs, $user;
+
+    if (!in_array('thirdpartycard', explode(':', $parameters['context']))) return 0;
+    if (!isModEnabled('monmodule')) return 0;
+    if (!$user->hasRight('monmodule', 'monobjet', 'read')) return 0;
+
+    $langs->load('monmodule@monmodule');
+
+    $nbItems = 0; // Optionnel : nombre d'éléments pour le badge
+    $this->results[] = [
+        'url'      => dol_buildpath('/monmodule/monobjetlist.php', 1)
+                      .'?fk_soc='.$object->id,
+        'label'    => $langs->trans('MonObjets'),
+        'badge'    => $nbItems ?: null,
+        'badgeClass'=> 'badgeneutral',
+        'key'      => 'monobjet',
+    ];
+    return 1;
+}
+```
+
+---
+
+## Exemple complet — ajouter des champs sur un formulaire (`formObjectOptions`)
+
+Ajouter des champs supplémentaires sur la fiche de création/édition d'une facture :
+
+```php
+public function formObjectOptions(&$parameters, &$object, &$action, $hookmanager)
+{
+    global $db, $langs, $user;
+
+    if (!in_array('invoicecard', explode(':', $parameters['context']))) return 0;
+    if (!isModEnabled('monmodule')) return 0;
+
+    $langs->load('monmodule@monmodule');
+
+    if ($action == 'create' || $action == 'edit') {
+        // Affichage du champ dans le formulaire
+        $this->resprints .= '<tr class="oddeven">';
+        $this->resprints .= '<td>'.$langs->trans('MonChamp').'</td>';
+        $this->resprints .= '<td><input type="text" name="monchamp" class="minwidth200"';
+        $this->resprints .= ' value="'.dol_escape_htmltag(GETPOST('monchamp', 'alphanohtml')).'"></td>';
+        $this->resprints .= '</tr>';
+    } else {
+        // Affichage en lecture
+        $val = ''; // Lire depuis la table du module
+        $this->resprints .= '<tr class="oddeven">';
+        $this->resprints .= '<td>'.$langs->trans('MonChamp').'</td>';
+        $this->resprints .= '<td>'.dol_escape_htmltag($val).'</td>';
+        $this->resprints .= '</tr>';
+    }
+    return 0;
+}
+```
+
+Persister la valeur dans `doActions` (même classe) :
+
+```php
+public function doActions(&$parameters, &$object, &$action, $hookmanager)
+{
+    global $db, $user;
+
+    if (!in_array('invoicecard', explode(':', $parameters['context']))) return 0;
+
+    if (($action == 'add' || $action == 'update') && $object->id > 0) {
+        $val = GETPOST('monchamp', 'alphanohtml');
+        $sql = "INSERT INTO ".MAIN_DB_PREFIX."monmodule_invoice_extra (fk_invoice, monchamp)";
+        $sql .= " VALUES ('".(int)$object->id."', '".$db->escape($val)."')";
+        $sql .= " ON DUPLICATE KEY UPDATE monchamp = '".$db->escape($val)."'";
+        $db->query($sql);
+    }
+    return 0;
+}
+```
+
+---
+
+## Exemple complet — ajouter une colonne sur une liste (`printFieldListOption`)
+
+Ajouter une colonne "Mon champ" sur la liste des tiers :
+
+**Descripteur** :
+
+```php
+$this->module_parts['hooks'] = ['thirdpartylist'];
+```
+
+**Hook `printFieldListTitle`** (en-tête de colonne) :
+
+```php
+public function printFieldListTitle(&$parameters, &$object, &$action, $hookmanager)
+{
+    global $langs;
+
+    if (!in_array('thirdpartylist', explode(':', $parameters['context']))) return 0;
+    $langs->load('monmodule@monmodule');
+
+    $this->resprints = '<th class="liste_titre">'.$langs->trans('MonChamp').'</th>';
+    return 0;
+}
+```
+
+**Hook `printFieldListValue`** (valeur par ligne) :
+```php
+public function printFieldListValue(&$parameters, &$object, &$action, $hookmanager)
+{
+    if (!in_array('thirdpartylist', explode(':', $parameters['context']))) return 0;
+
+    $val = ''; // Récupérer la valeur depuis la table du module
+    $this->resprints = '<td>'.dol_escape_htmltag($val).'</td>';
+    return 0;
+}
+```
+
+**Hook `printFieldListWhere`** (filtre SQL optionnel) :
+```php
+public function printFieldListWhere(&$parameters, &$object, &$action, $hookmanager)
+{
+    global $db;
+
+    if (!in_array('thirdpartylist', explode(':', $parameters['context']))) return 0;
+
+    // Jointure SQL additionnelle
+    $this->resprints = ' LEFT JOIN '.MAIN_DB_PREFIX.'monmodule_extra AS me'
+        .' ON me.fk_soc = t.rowid';
+    return 0;
+}
+```

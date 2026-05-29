@@ -15,7 +15,7 @@ Dolibarr fournit des helpers qui gèrent les cas limites (UTF-8, formats de date
 configuration). Les utiliser plutôt que les fonctions PHP natives.
 
 | Besoin | Helper Dolibarr |
-|---|---|
+| --- | --- |
 | Date/heure courante | `dol_now()` |
 | Formater une date | `dol_print_date($date, 'day')` |
 | Journaliser | `dol_syslog($msg, LOG_DEBUG)` |
@@ -27,12 +27,14 @@ configuration). Les utiliser plutôt que les fonctions PHP natives.
 ## Journaliser avec `dol_syslog()`, jamais `var_dump`/`error_log`
 
 Incorrect :
+
 ```php
 error_log('valeur = '.$x);
 var_dump($object);
 ```
 
 Correct :
+
 ```php
 dol_syslog("MonObjet::create ref=".$this->ref, LOG_DEBUG);
 ```
@@ -47,6 +49,7 @@ en Laravel. Convention : `> 0` succès, `0` neutre, `< 0` erreur. Messages dans
 `$this->error` (dernier) et `$this->errors[]` (liste).
 
 Incorrect :
+
 ```php
 public function valider(User $user)
 {
@@ -56,6 +59,7 @@ public function valider(User $user)
 ```
 
 Correct :
+
 ```php
 public function valider(User $user)
 {
@@ -85,11 +89,13 @@ return -1;
 Tout texte présenté à l'utilisateur passe par un fichier `.lang` et `$langs->trans()`.
 
 Incorrect :
+
 ```php
 print 'Enregistrement sauvegardé';
 ```
 
 Correct :
+
 ```php
 // langs/fr_FR/monmodule.lang  ->  RecordSaved=Enregistrement sauvegardé
 $langs->load('monmodule@monmodule');
@@ -181,7 +187,7 @@ et `getDolGlobalString()` pour la lecture.
 
 Format : une clé par ligne, `Cle=Traduction`. Commentaires avec `#`.
 
-```
+```ini
 CHARSET=UTF-8
 
 # ---- Administration ----
@@ -205,6 +211,7 @@ Permission500003=Supprimer les objets
 ```
 
 Conventions de nommage des clés :
+
 - **CamelCase** (pas snake_case) : `MonModuleSetup` et non `mon_module_setup`
 - **Permissions** : `Permission` + ID du droit (ex : `Permission500001`)
 - **Singulier/Pluriel** : fournir les deux formes
@@ -245,3 +252,92 @@ Alternative plus simple quand `dol_include_once` est disponible :
 ```php
 dol_include_once('/monmodule/class/monobjet.class.php');
 ```
+
+## Page d'administration multi-onglets
+
+Quand l'admin comporte plusieurs onglets (Configuration, À propos, Logs…),
+centraliser la construction des onglets dans `lib/monmodule.lib.php` :
+
+```php
+// lib/monmodule.lib.php
+function monmodule_admin_prepare_head()
+{
+    global $langs, $conf;
+    $langs->load('monmodule@monmodule');
+
+    $h    = 0;
+    $head = [];
+
+    $head[$h][0] = dol_buildpath('/monmodule/admin/setup.php', 1);
+    $head[$h][1] = $langs->trans('Settings');
+    $head[$h][2] = 'settings';
+    $h++;
+
+    $head[$h][0] = dol_buildpath('/monmodule/admin/logs.php', 1);
+    $head[$h][1] = $langs->trans('Logs');
+    $head[$h][2] = 'logs';
+    $h++;
+
+    $head[$h][0] = dol_buildpath('/monmodule/admin/about.php', 1);
+    $head[$h][1] = $langs->trans('About');
+    $head[$h][2] = 'about';
+    $h++;
+
+    complete_head_from_modules($conf, $langs, null, $head, $h, 'monmodule_admin');
+
+    return $head;
+}
+```
+
+Utilisation dans chaque page admin (3e argument = clé de l'onglet actif) :
+
+```php
+$head = monmodule_admin_prepare_head();
+print dol_get_fiche_head($head, 'settings', $langs->trans('MonModule'), -1, 'cog');
+// … contenu de l'onglet …
+print dol_get_fiche_end();
+```
+
+## Déclarer et lire plusieurs constantes de configuration
+
+Pour un module avec plusieurs options, regrouper la lecture et l'écriture :
+
+```php
+// Lire toutes les constantes du module en une passe
+$conf_provider  = getDolGlobalString('MONMODULE_PROVIDER',    'openai');
+$conf_api_key   = getDolGlobalString('MONMODULE_API_KEY',     '');
+$conf_max_items = (int) getDolGlobalString('MONMODULE_MAX_ITEMS', '50');
+$conf_debug     = (int) getDolGlobalString('MONMODULE_DEBUG',    '0');
+```
+
+Écriture (page setup.php, action `setvalue`) :
+
+```php
+if ($action == 'setvalue') {
+    $db->begin();
+
+    $ok  = dolibarr_set_const($db, 'MONMODULE_PROVIDER',
+               GETPOST('provider',   'alphanohtml'), 'chaine', 0, '', $conf->entity);
+    $ok += dolibarr_set_const($db, 'MONMODULE_API_KEY',
+               GETPOST('api_key',    'alphanohtml'), 'chaine', 0, '', $conf->entity);
+    $ok += dolibarr_set_const($db, 'MONMODULE_MAX_ITEMS',
+               (int) GETPOST('max_items', 'int'),    'chaine', 0, '', $conf->entity);
+    $ok += dolibarr_set_const($db, 'MONMODULE_DEBUG',
+               (int) GETPOST('debug',     'int'),    'chaine', 0, '', $conf->entity);
+
+    if ($ok >= 0) {
+        $db->commit();
+        setEventMessages($langs->trans('SetupSaved'), null, 'mesgs');
+    } else {
+        $db->rollback();
+        setEventMessages($langs->trans('Error'), null, 'errors');
+    }
+}
+```
+
+Conventions :
+
+- Nommer les constantes `MODULENAME_OPTION` (majuscules, underscore)
+- Toujours passer `$conf->entity` pour le multi-entité
+- Type `'chaine'` pour toutes les valeurs (Dolibarr les stocke toujours en texte)
+- Envelopper plusieurs `dolibarr_set_const` dans une transaction

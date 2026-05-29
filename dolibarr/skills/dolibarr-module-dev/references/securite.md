@@ -204,6 +204,158 @@ exit;
 Règle simple : utiliser le filtre **le plus restrictif** compatible avec l'usage.
 En cas de doute, `alphanohtml` est le choix sûr par défaut pour du texte.
 
+## Handler AJAX complet — gabarit de référence
+
+Voici la structure complète d'un fichier `ajax/monmodule.ajax.php` :
+
+```php
+<?php
+// Déclarer AVANT l'include de main.inc.php
+if (!defined('NOCSRFCHECK'))    define('NOCSRFCHECK',    '1');
+if (!defined('NOTOKENRENEWAL')) define('NOTOKENRENEWAL', '1');
+if (!defined('NOREQUIREMENU'))  define('NOREQUIREMENU',  '1');
+if (!defined('NOREQUIREHTML'))  define('NOREQUIREHTML',  '1');
+if (!defined('NOREQUIREAJAX'))  define('NOREQUIREAJAX',  '1');
+
+$res = 0;
+if (!$res && file_exists('../../main.inc.php')) $res = @include '../../main.inc.php';
+if (!$res && file_exists('../../../main.inc.php')) $res = @include '../../../main.inc.php';
+if (!$res) die('Include of main fails');
+
+dol_include_once('/monmodule/class/monobjet.class.php');
+
+global $db, $user;
+
+// Lire l'action (POST ou JSON)
+$action = '';
+$input  = null;
+$ct     = $_SERVER['CONTENT_TYPE'] ?? '';
+if (strpos($ct, 'application/json') !== false) {
+    $input  = json_decode(file_get_contents('php://input'), true) ?: [];
+    $action = isset($input['action']) ? (string) $input['action'] : '';
+} else {
+    $action = GETPOST('action', 'aZ09');
+}
+
+// Toujours vérifier les droits, même en AJAX
+if (!isModEnabled('monmodule')) {
+    top_httphead('application/json');
+    echo json_encode(['success' => false, 'error' => 'Module disabled']);
+    exit;
+}
+if (!$user->hasRight('monmodule', 'monobjet', 'read')) {
+    top_httphead('application/json');
+    echo json_encode(['success' => false, 'error' => 'Forbidden']);
+    exit;
+}
+
+top_httphead('application/json');
+
+switch ($action) {
+    case 'getlist':
+        $object = new MonObjet($db);
+        $list   = $object->fetchAll('', '', 0, 0, ['entity' => $db->entity]);
+        echo json_encode(['success' => true, 'data' => $list]);
+        break;
+
+    case 'update':
+        if (!$user->hasRight('monmodule', 'monobjet', 'write')) {
+            echo json_encode(['success' => false, 'error' => 'Forbidden']);
+            break;
+        }
+        $id    = (int) ($input['id'] ?? GETPOST('id', 'int'));
+        $label = $db->escape(($input['label'] ?? GETPOST('label', 'alphanohtml')));
+
+        $object = new MonObjet($db);
+        if ($object->fetch($id) > 0) {
+            $object->label = $label;
+            $result = $object->update($user);
+            echo json_encode($result > 0
+                ? ['success' => true]
+                : ['success' => false, 'error' => $object->error]);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Not found']);
+        }
+        break;
+
+    default:
+        echo json_encode(['success' => false, 'error' => 'Unknown action']);
+        break;
+}
+exit;
+```
+
+Points clés :
+
+- Constantes déclarées **avant** `include main.inc.php`
+- Droits vérifiés **après** l'include (on a besoin de `$user`)
+- Lire le corps JSON `php://input` si `Content-Type: application/json`
+- `top_httphead('application/json')` avant tout `echo`
+- `exit` final systématique
+
+## Upload de fichier — sécurité
+
+Valider extension, MIME et taille avant d'écrire sur le disque.
+
+Incorrect (aucun contrôle) :
+```php
+move_uploaded_file($_FILES['file']['tmp_name'], $conf->monmodule->dir_output.'/'.$_FILES['file']['name']);
+```
+
+Correct :
+```php
+$uploadedFile = $_FILES['file'] ?? null;
+
+if (!$uploadedFile || $uploadedFile['error'] !== UPLOAD_ERR_OK) {
+    setEventMessages($langs->trans('ErrorUpload'), null, 'errors');
+    break;
+}
+
+// Extensions autorisées (liste blanche)
+$allowedExt  = ['pdf', 'docx', 'odt', 'png', 'jpg', 'jpeg'];
+$ext         = strtolower(pathinfo($uploadedFile['name'], PATHINFO_EXTENSION));
+if (!in_array($ext, $allowedExt, true)) {
+    setEventMessages($langs->trans('ErrorBadFileType'), null, 'errors');
+    break;
+}
+
+// MIME réel (pas celui déclaré par le client)
+$finfo   = new finfo(FILEINFO_MIME_TYPE);
+$mime    = $finfo->file($uploadedFile['tmp_name']);
+$allowed = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.oasis.opendocument.text', 'image/png', 'image/jpeg'];
+if (!in_array($mime, $allowed, true)) {
+    setEventMessages($langs->trans('ErrorBadFileType'), null, 'errors');
+    break;
+}
+
+// Taille max (ex : 10 Mo)
+if ($uploadedFile['size'] > 10 * 1024 * 1024) {
+    setEventMessages($langs->trans('ErrorFileTooLarge'), null, 'errors');
+    break;
+}
+
+// Nom de fichier sécurisé
+$filename  = dol_sanitizeFileName($uploadedFile['name']);
+$destDir   = $conf->monmodule->dir_output.'/'.$object->ref.'/';
+if (!is_dir($destDir)) dol_mkdir($destDir);
+$destPath  = $destDir.$filename;
+
+if (!move_uploaded_file($uploadedFile['tmp_name'], $destPath)) {
+    setEventMessages($langs->trans('ErrorMoveFile'), null, 'errors');
+    break;
+}
+dol_syslog("MonModule::upload fichier ".$destPath, LOG_INFO);
+```
+
+Règles clés :
+
+- **Liste blanche** d'extensions, pas liste noire
+- **MIME réel** via `finfo`, pas `$_FILES['type']` (contrôlable par le client)
+- **Taille max** validée côté serveur
+- **Nom de fichier** passé par `dol_sanitizeFileName()`
+- **Répertoire** créé avec `dol_mkdir()` (respecte les permissions)
+
 ## À ne jamais faire
 
 - `dol_eval()` sur une donnée non maîtrisée — exécution de code.

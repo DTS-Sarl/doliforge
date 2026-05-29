@@ -1,0 +1,86 @@
+/* ============================================================
+   monmodule.css — Styles du module Mon Module
+   ============================================================
+   RÈGLES DOLIFORGE :
+   - Jamais de linear-gradient / radial-gradient
+   - Toutes les couleurs via variables :root
+   - Continuité visuelle avec Dolibarr (pas de surcharge des liens natifs)
+   ============================================================ */
+
+/* 1. Variables
+   ============================================================ */
+:root {
+	/* Couleurs principales */
+	--monmodule-primary:      #3c5a9a;
+	--monmodule-primary-dark: #2d4478;
+	--monmodule-secondary:    #e8442d;
+
+	/* Statuts */
+	--monmodule-success:  #27ae60;
+	--monmodule-warning:  #e67e22;
+	--monmodule-danger:   #e74c3c;
+	--monmodule-info:     #2980b9;
+
+	/* Neutres */
+	--monmodule-bg:          #f5f6fa;
+	--monmodule-bg-card:     #ffffff;
+	--monmodule-border:      #dde1e7;
+	--monmodule-text:        #2c3e50;
+	--monmodule-text-light:  #7f8c8d;
+
+	/* Espacements */
+	--monmodule-radius: 6px;
+	--monmodule-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+
+/* 2. Reset / base
+   ============================================================ */
+/* Pas de reset global — hériter de Dolibarr */
+
+/* 3. Layout
+   ============================================================ */
+.monmodule-container {
+	padding: 12px 0;
+}
+
+/* 4. Composants
+   ============================================================ */
+.monmodule-card {
+	background: var(--monmodule-bg-card);
+	border: 1px solid var(--monmodule-border);
+	border-radius: var(--monmodule-radius);
+	padding: 16px;
+	box-shadow: var(--monmodule-shadow);
+	margin-bottom: 12px;
+}
+
+.monmodule-badge {
+	display: inline-block;
+	padding: 3px 10px;
+	border-radius: 12px;
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.4px;
+}
+
+.monmodule-badge-draft     { background: #ecf0f1; color: var(--monmodule-text-light); }
+.monmodule-badge-validated { background: #d5f5e3; color: #1e8449; }
+.monmodule-badge-closed    { background: #fdebd0; color: #a04000; }
+
+/* 5. Pages spécifiques
+   ============================================================ */
+
+/* 6. Responsive
+   ============================================================ */
+@media (max-width: 768px) {
+	.monmodule-card {
+		padding: 10px;
+	}
+}
+
+/* 7. Utilitaires
+   ============================================================ */
+.monmodule-mt-8  { margin-top: 8px; }
+.monmodule-mb-8  { margin-bottom: 8px; }
+.monmodule-text-muted { color: var(--monmodule-text-light); font-size: 12px; }

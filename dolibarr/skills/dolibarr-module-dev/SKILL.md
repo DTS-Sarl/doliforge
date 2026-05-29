@@ -122,4 +122,3 @@ Charger uniquement la fiche pertinente au moment voulu :
 - `references/css-js.md` — bonnes pratiques CSS/JS : variables, pas de dégradés, cohérence inter-pages, namespace JS.
 - `references/internationalisation.md` — fichiers `.lang`, `$langs->trans()`, paramètres, pluriels, bonnes pratiques i18n.
 - `references/versioning-changelog.md` — numérotation des versions, format ChangeLog, nommage ZIP.
-- `references/pages-ui.md` — barre d'actions, onglets `prepare_head()`, page liste complète, badges statut `dolGetStatus()`.

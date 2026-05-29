@@ -1,0 +1,57 @@
+CHARSET=UTF-8
+
+# ---- Module ----
+MonModuleName=My Module
+MonModuleDescription=Management module for MonObjet objects
+
+# ---- Navigation ----
+MonModuleMenu=My Module
+MonModuleMenuList=List of objects
+NewMonObjet=New object
+
+# ---- Object ----
+MonObjet=My Object
+MonObjets=My Objects
+MonObjetList=Objects list
+MonObjetCard=Object card
+
+# ---- Fields ----
+MonObjetRef=Reference
+MonObjetLabel=Label
+MonObjetStatus=Status
+
+# ---- Actions ----
+CreateMonObjet=Create an object
+ModifyMonObjet=Modify object
+DeleteMonObjet=Delete object
+ValidateMonObjet=Validate object
+CloseMonObjet=Close object
+
+# ---- Messages ----
+MonObjetCreated=Object created successfully
+MonObjetUpdated=Object updated
+MonObjetValidated=Object validated
+MonObjetDeleted=Object deleted
+ConfirmDeleteMonObjet=Are you sure you want to delete this object?
+ConfirmValidateMonObjet=Are you sure you want to validate this object?
+
+# ---- Statuses ----
+Draft=Draft
+Validated=Validated
+Closed=Closed
+
+# ---- Administration ----
+MonModuleSetup=My Module Setup
+MonModuleAbout=About My Module
+SetupSaved=Settings saved
+MonModuleOption1=Option 1
+MonModuleOption1Help=Description of option 1
+
+# ---- Permissions ----
+MonModuleReadObjects=Read objects
+MonModuleWriteObjects=Create and modify objects
+MonModuleDeleteObjects=Delete objects
+
+# ---- Errors ----
+ErrorMonObjetNotFound=Object not found
+ErrorMonObjetRefExists=This reference already exists

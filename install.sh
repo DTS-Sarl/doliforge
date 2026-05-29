@@ -5,7 +5,7 @@
 # ============================================================================
 set -euo pipefail
 
-DOLIFORGE_VERSION="1.4.0"
+DOLIFORGE_VERSION="1.5.0"
 DOLIFORGE_REPO="DTS-Sarl/doliforge"
 DOLIFORGE_BRANCH="main"
 DOLIFORGE_DIR="${HOME}/.doliforge"
@@ -56,6 +56,8 @@ detect_tool() {
         echo "windsurf"
     elif [ -f ".clinerules" ]; then
         echo "cline"
+    elif [ -d ".roo/rules" ] || [ -f ".roo/rules/dolibarr.md" ]; then
+        echo "roocode"
     elif [ -f "codex.yaml" ] || [ -f ".codex" ] || [ -f "AGENTS.md" ]; then
         echo "codex"
     else
@@ -68,14 +70,15 @@ select_tool() {
     # Appelée directement (pas dans $()) pour que echo et read fonctionnent normalement
     local detected="${1:-claude}"
 
-    local labels=("Claude Code" "Cursor" "Windsurf" "Cline" "Codex (OpenAI)" "Tous les outils")
-    local values=("claude" "cursor" "windsurf" "cline" "codex" "all")
+    local labels=("Claude Code" "Cursor" "Windsurf" "Cline" "RooCode" "Codex (OpenAI)" "Tous les outils")
+    local values=("claude" "cursor" "windsurf" "cline" "roocode" "codex" "all")
     local default_idx=0
     case "$detected" in
         cursor)   default_idx=1 ;;
         windsurf) default_idx=2 ;;
         cline)    default_idx=3 ;;
-        codex)    default_idx=4 ;;
+        roocode)  default_idx=4 ;;
+        codex)    default_idx=5 ;;
     esac
 
     echo ""
@@ -94,7 +97,7 @@ select_tool() {
     read -r choice < /dev/tty   # Lire depuis le terminal, pas stdin
     choice="${choice:-$((default_idx+1))}"
 
-    if [[ "$choice" =~ ^[1-6]$ ]]; then
+    if [[ "$choice" =~ ^[1-7]$ ]]; then
         SELECTED_TOOL="${values[$((choice-1))]}"
     else
         SELECTED_TOOL="${values[$default_idx]}"
@@ -173,12 +176,14 @@ setup_project() {
         cursor)   setup_cursor "$project_dir" ;;
         windsurf) setup_windsurf "$project_dir" ;;
         cline)    setup_cline "$project_dir" ;;
+        roocode)  setup_roocode "$project_dir" ;;
         codex)    setup_codex "$project_dir" ;;
         all)
             setup_claude_code "$project_dir"
             setup_cursor "$project_dir"
             setup_windsurf "$project_dir"
             setup_cline "$project_dir"
+            setup_roocode "$project_dir"
             setup_codex "$project_dir"
             ;;
         *)
@@ -314,6 +319,30 @@ References : `references/refactoring.md` + `references/base-de-donnees.md`
 
 Argument optionnel : $ARGUMENTS (ex: "migrer de Dolibarr 18 vers 22")
 CMDEOF
+
+    cat > "${cmd_dir}/dolibarr-review.md" << 'CMDEOF'
+---
+description: Relire et critiquer du code de module Dolibarr
+---
+
+Charge le skill `dolibarr-module-dev` et effectue une revue de code
+sur le fichier, dossier ou diff fourni en argument.
+
+Pour chaque point trouve, distinguer :
+- **Bloquant** (securite, injection, perte de donnees) — doit etre corrige
+- **Majeur** (conventions, compatibilite, performance) — fortement recommande
+- **Mineur** (style, lisibilite) — a corriger si le contexte le permet
+
+Passe obligatoire sur :
+1. Securite → `references/securite.md`
+2. Conventions → `references/conventions-code.md`
+3. CSS/JS si applicable → `references/css-js.md`
+
+Ne pas suggerer de refactoring au-dela du perimetre demande.
+Conclure par un score /10 et la liste des corrections prioritaires.
+
+Argument optionnel : $ARGUMENTS (chemin du fichier ou dossier a relire)
+CMDEOF
 }
 
 inject_claude_md() {
@@ -354,6 +383,7 @@ les fiches de référence appropriées du skill `dolibarr-module-dev` :
 | `/dolibarr-debug` | Diagnostiquer un problème |
 | `/dolibarr-publish` | Préparer pour publication DoliStore |
 | `/dolibarr-upgrade` | Migrer un module vers une version Dolibarr supérieure |
+| `/dolibarr-review` | Relire et critiquer du code (score /10 + corrections prioritaires) |
 <!-- /DOLIFORGE -->
 SECTIONEOF
 }
@@ -526,6 +556,67 @@ CLINEEOF
     log_info ".clinerules configuré pour Cline"
 }
 
+# ---- RooCode ----
+setup_roocode() {
+    local project_dir="$1"
+    local rules_dir="${project_dir}/.roo/rules"
+    local rules_file="${rules_dir}/dolibarr.md"
+
+    if [ -f "$rules_file" ] && grep -q "# DOLIFORGE" "$rules_file" 2>/dev/null; then
+        log_warn ".roo/rules/dolibarr.md contient déjà DoliForge — ignoré"
+        return
+    fi
+
+    mkdir -p "$rules_dir"
+    cat >> "$rules_file" << 'ROOEOF'
+# DOLIFORGE — Règles de développement Dolibarr
+# Généré par DoliForge (DTS SARL) — ne pas modifier manuellement
+
+Quand tu travailles sur un module Dolibarr, respecte ces règles :
+
+## Sécurité obligatoire
+- Toute entrée via GETPOST('nom', 'type') — jamais $_GET/$_POST
+- Jeton CSRF newToken() sur tout formulaire POST
+- Échappement SQL : $db->escape() pour chaînes, (int) pour entiers
+- Permissions : hasRight() + restrictedArea() avant tout traitement
+- Sortie : dol_escape_htmltag() sur contenu dynamique
+
+## Structure
+- Module dans htdocs/custom/<module>/
+- Descripteur : core/modules/modXxx.class.php extends DolibarrModules
+- Classes métier : extends CommonObject avec pattern $fields
+- Pages : llxHeader()/llxFooter(), setEventMessages()
+- SQL : MAIN_DB_PREFIX en PHP, llx_ dans fichiers .sql
+- Entity obligatoire pour multi-société
+
+## Conventions
+- Globales : global $db, $conf, $user, $langs;
+- Retours : > 0 succès, 0 neutre, < 0 erreur (jamais booléens)
+- Helpers : dol_syslog(), dol_now(), dol_print_date(), dol_buildpath()
+- Transactions : $db->begin() / commit() / rollback()
+- Traductions : $langs->trans() — jamais texte en dur
+- Indentation : tabulations (pas espaces)
+
+## CSS/JS
+- Jamais de dégradés CSS (linear-gradient interdit)
+- Couleurs en variables :root --monmodule-*
+- Pas de CDN — librairies dans js/vendor/
+- JS dans namespace unique
+- Continuité visuelle : hériter des styles natifs Dolibarr
+
+## Pages AJAX
+- Déclarer NOCSRFCHECK, NOTOKENRENEWAL, NOREQUIREMENU AVANT main.inc.php
+- Toujours vérifier hasRight() même en AJAX
+- Retourner JSON via top_httphead('application/json') + json_encode()
+
+## Références détaillées
+Les fiches complètes sont dans ~/.doliforge/dolibarr/skills/dolibarr-module-dev/references/
+# /DOLIFORGE
+ROOEOF
+
+    log_info ".roo/rules/dolibarr.md configuré pour RooCode"
+}
+
 # ---- Codex (OpenAI) ----
 setup_codex() {
     local project_dir="$1"
@@ -575,6 +666,7 @@ uninstall_project() {
     rm -f "${project_dir}/.claude/commands/dolibarr-debug.md"
     rm -f "${project_dir}/.claude/commands/dolibarr-publish.md"
     rm -f "${project_dir}/.claude/commands/dolibarr-upgrade.md"
+    rm -f "${project_dir}/.claude/commands/dolibarr-review.md"
     log_info "Slash commands supprimées"
 
     if [ -f "${project_dir}/CLAUDE.md" ]; then
@@ -605,6 +697,12 @@ uninstall_project() {
         sed -i.bak '/<!-- DOLIFORGE -->/,/<!-- \/DOLIFORGE -->/d' "${project_dir}/AGENTS.md"
         rm -f "${project_dir}/AGENTS.md.bak"
         log_info "Section DoliForge retirée de AGENTS.md"
+    fi
+
+    if [ -f "${project_dir}/.roo/rules/dolibarr.md" ]; then
+        sed -i.bak '/# DOLIFORGE/,/# \/DOLIFORGE/d' "${project_dir}/.roo/rules/dolibarr.md"
+        rm -f "${project_dir}/.roo/rules/dolibarr.md.bak"
+        log_info "Section DoliForge retirée de .roo/rules/dolibarr.md"
     fi
 
     echo ""
@@ -683,6 +781,12 @@ show_status() {
         echo -e "  ${DIM}—  AGENTS.md            non configuré (optionnel)${NC}"
     fi
 
+    if [ -f ".roo/rules/dolibarr.md" ] && grep -q "DOLIFORGE" ".roo/rules/dolibarr.md" 2>/dev/null; then
+        log_info ".roo/rules/dolibarr.md configuré"
+    else
+        echo -e "  ${DIM}—  .roo/rules/          non configuré (optionnel)${NC}"
+    fi
+
     echo ""
 }
 
@@ -734,6 +838,8 @@ main() {
             echo -e "  ${CYAN}/dolibarr-create${NC}   — Créer un module"
             echo -e "  ${CYAN}/dolibarr-debug${NC}    — Débugger un problème"
             echo -e "  ${CYAN}/dolibarr-publish${NC}  — Publier sur DoliStore"
+            echo -e "  ${CYAN}/dolibarr-upgrade${NC}  — Migrer vers une version Dolibarr"
+            echo -e "  ${CYAN}/dolibarr-review${NC}   — Relire et critiquer du code"
             echo ""
             ;;
         uninstall)

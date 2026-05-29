@@ -1,0 +1,57 @@
+CHARSET=UTF-8
+
+# ---- Module ----
+MonModuleName=Mon Module
+MonModuleDescription=Module de gestion des objets MonObjet
+
+# ---- Navigation ----
+MonModuleMenu=Mon Module
+MonModuleMenuList=Liste des objets
+NewMonObjet=Nouvel objet
+
+# ---- Objet ----
+MonObjet=Mon Objet
+MonObjets=Mes Objets
+MonObjetList=Liste des objets
+MonObjetCard=Fiche objet
+
+# ---- Champs ----
+MonObjetRef=Référence
+MonObjetLabel=Libellé
+MonObjetStatus=Statut
+
+# ---- Actions ----
+CreateMonObjet=Créer un objet
+ModifyMonObjet=Modifier l'objet
+DeleteMonObjet=Supprimer l'objet
+ValidateMonObjet=Valider l'objet
+CloseMonObjet=Clôturer l'objet
+
+# ---- Messages ----
+MonObjetCreated=Objet créé avec succès
+MonObjetUpdated=Objet mis à jour
+MonObjetValidated=Objet validé
+MonObjetDeleted=Objet supprimé
+ConfirmDeleteMonObjet=Êtes-vous sûr de vouloir supprimer cet objet ?
+ConfirmValidateMonObjet=Êtes-vous sûr de vouloir valider cet objet ?
+
+# ---- Statuts ----
+Draft=Brouillon
+Validated=Validé
+Closed=Clôturé
+
+# ---- Administration ----
+MonModuleSetup=Configuration Mon Module
+MonModuleAbout=À propos de Mon Module
+SetupSaved=Configuration sauvegardée
+MonModuleOption1=Option 1
+MonModuleOption1Help=Description de l'option 1
+
+# ---- Permissions ----
+MonModuleReadObjects=Lire les objets
+MonModuleWriteObjects=Créer et modifier les objets
+MonModuleDeleteObjects=Supprimer les objets
+
+# ---- Erreurs ----
+ErrorMonObjetNotFound=Objet introuvable
+ErrorMonObjetRefExists=Cette référence existe déjà

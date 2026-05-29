@@ -2,10 +2,11 @@
 
 La forge IA de **DTS SARL** (Dywants Technologie & Services) :
 skills, agents et fiches de reference pour developper et auditer des modules
-Dolibarr 18-23 avec Claude Code, Cursor, Codex ou tout outil de coding IA.
+Dolibarr 18-23 avec Claude Code, Cursor, Windsurf, Cline, RooCode, Codex
+ou tout outil de coding IA.
 
-**Outils supportes** : Claude Code, Cursor, Codex (OpenAI), et tout outil
-supportant les fichiers d'instructions projet.
+**Outils supportes** : Claude Code, Cursor, Windsurf, Cline, RooCode, Codex (OpenAI),
+et tout outil supportant les fichiers d'instructions projet.
 
 ## Installation
 
@@ -16,8 +17,9 @@ bash <(curl -fsSL https://raw.githubusercontent.com/DTS-Sarl/doliforge/main/inst
 ```
 
 Le script :
+
 1. **Telecharge DoliForge** dans `~/.doliforge/` (clone GitHub automatique)
-2. **Detecte l'outil AI** et te propose de confirmer ou choisir (Claude Code, Cursor, Codex)
+2. **Detecte l'outil AI** et te propose de confirmer ou choisir (Claude Code, Cursor, Windsurf, Cline, RooCode, Codex)
 3. **Detecte la racine git** du projet et configure dans le bon dossier
 
 Pas besoin de cloner manuellement. Pas besoin de passer d'arguments.
@@ -29,11 +31,12 @@ Pas besoin de cloner manuellement. Pas besoin de passer d'arguments.
 ### Que fait l'installation ?
 
 | Outil | Fichiers configures |
-|---|---|
-| **Claude Code** | `.claude/skills/` (symlink) + `.claude/commands/` (4 commandes) + `CLAUDE.md` |
+| --- | --- |
+| **Claude Code** | `.claude/skills/` (symlink) + `.claude/commands/` (6 commandes) + `CLAUDE.md` |
 | **Cursor** | `.cursorrules` (regles Dolibarr injectees) |
 | **Windsurf** | `.windsurfrules` (regles Dolibarr injectees) |
 | **Cline** | `.clinerules` (regles Dolibarr injectees) |
+| **RooCode** | `.roo/rules/dolibarr.md` (regles Dolibarr injectees) |
 | **Codex** | `AGENTS.md` (instructions agent injectees) |
 
 ## Commandes disponibles
@@ -41,12 +44,13 @@ Pas besoin de cloner manuellement. Pas besoin de passer d'arguments.
 Apres installation, dans Claude Code :
 
 | Commande | Usage |
-|---|---|
+| --- | --- |
 | `/dolibarr-audit` | Auditer un module (securite, compatibilite, conventions) |
 | `/dolibarr-create` | Creer un nouveau module Dolibarr depuis zero |
 | `/dolibarr-debug` | Diagnostiquer un probleme (erreur 500, trigger inactif, etc.) |
 | `/dolibarr-publish` | Preparer un module pour publication DoliStore |
 | `/dolibarr-upgrade` | Migrer un module vers une version Dolibarr superieure |
+| `/dolibarr-review` | Relire et critiquer du code (score /10 + corrections prioritaires) |
 
 Le skill se declenche aussi **automatiquement** quand Claude detecte du travail
 sur un module Dolibarr.
@@ -75,16 +79,16 @@ cd /chemin/vers/autre-projet
 19 fiches couvrant tout le cycle de vie d'un module :
 
 | Fiche | Sujet |
-|---|---|
+| --- | --- |
 | `structure-module.md` | Arborescence, nommage, dossier `ajax/`, assets |
 | `descripteur.md` | `modXxx.class.php`, droits, menus, tabs, cronjobs |
 | `objets-metier.md` | `CommonObject`, `$fields`, CRUD, relations FK, validation |
 | `base-de-donnees.md` | SQL, prefixe, `entity`, migrations, helpers SQL |
-| `securite.md` | `GETPOST`, CSRF, SQL, permissions, pages AJAX, filtres |
+| `securite.md` | `GETPOST`, CSRF, SQL, permissions, pages AJAX, upload fichier |
 | `hooks-et-triggers.md` | Hooks, triggers, extrafields, evenements courants |
 | `pages-ui.md` | Ossature page, barre d'actions, onglets, liste complete, badges statut |
 | `css-js.md` | Variables CSS, pas de degrades, coherence inter-pages, namespace JS |
-| `conventions-code.md` | Helpers, retours, transactions, `.lang`, admin, fallbacks |
+| `conventions-code.md` | Helpers, retours, transactions, `.lang`, admin multi-onglets, constantes |
 | `internationalisation.md` | Fichiers `.lang`, `$langs->trans()`, parametres, pluriels |
 | `compatibilite-ecosysteme.md` | Multi-entite, dependances, cycle de test |
 | `pieges.md` | Pieges courants, cache, WAF, `restrictedArea` |
@@ -102,6 +106,24 @@ cd /chemin/vers/autre-projet
 | --- | --- |
 | `dolibarr-auditeur` | Audit securite, compatibilite, conventions, CSS/JS |
 | `dolibarr-createur` | Creation module from scratch — guide 9 etapes, produit le code complet |
+| `dolibarr-optimiseur` | Audit performance : N+1, index manquants, pagination, assets |
+
+### Template de module
+
+Un squelette de module pret a l'emploi est disponible dans `templates/monmodule/` :
+
+- `core/modules/modMonmodule.class.php` — descripteur complet
+- `class/monobjet.class.php` — CommonObject avec `$fields`, CRUD, statuts
+- `sql/` — table SQL + index + FK
+- `langs/fr_FR/` et `langs/en_US/` — fichiers de traduction complets
+- `lib/monmodule.lib.php` — `prepare_head()` objet + admin
+- `admin/setup.php` et `admin/about.php` — pages admin standard
+- `monobjetcard.php` — fiche CRUD complete avec `tabsAction`
+- `monobjetlist.php` — liste avec filtres, pagination, badges statut
+- `css/monmodule.css` — variables `:root`, pas de degrades
+- `js/monmodule.js` — namespace JS + helper AJAX
+
+Pour creer un nouveau module, copier le dossier et remplacer `monmodule` / `MonModule` / `monobjet` / `MonObjet` par les noms de ton module (voir `templates/monmodule/README.md`).
 
 ## Structure du depot
 
@@ -110,42 +132,39 @@ doliforge/
 ├── install.sh                     # Script d'installation multi-outils
 ├── README.md
 ├── .claude-plugin/                # Config plugin Claude Code
-├── dolibarr/
-│   ├── .claude-plugin/
-│   ├── agents/
-│   │   ├── dolibarr-auditeur.md   # Agent d'audit
-│   │   └── dolibarr-createur.md   # Agent de creation
-│   └── skills/
-│       └── dolibarr-module-dev/
-│           ├── SKILL.md           # Index principal du skill
-│           └── references/        # 19 fiches thematiques
-│               ├── structure-module.md
-│               ├── descripteur.md
-│               ├── objets-metier.md
-│               ├── base-de-donnees.md
-│               ├── securite.md
-│               ├── hooks-et-triggers.md
-│               ├── pages-ui.md
-│               ├── css-js.md
-│               ├── conventions-code.md
-│               ├── internationalisation.md
-│               ├── compatibilite-ecosysteme.md
-│               ├── pieges.md
-│               ├── debug.md
-│               ├── refactoring.md
-│               ├── performance.md
-│               ├── tests.md
-│               ├── api-rest.md
-│               ├── versioning-changelog.md
-│               └── dolistore-publication.md
+├── templates/
+│   └── monmodule/                 # Squelette de module complet
+│       ├── core/modules/
+│       ├── class/
+│       ├── sql/
+│       ├── langs/
+│       ├── lib/
+│       ├── admin/
+│       ├── css/
+│       ├── js/
+│       ├── monobjetcard.php
+│       └── monobjetlist.php
+└── dolibarr/
+    ├── .claude-plugin/
+    ├── agents/
+    │   ├── dolibarr-auditeur.md   # Agent d'audit
+    │   ├── dolibarr-createur.md   # Agent de creation
+    │   └── dolibarr-optimiseur.md # Agent de performance
+    └── skills/
+        └── dolibarr-module-dev/
+            ├── SKILL.md           # Index principal du skill
+            └── references/        # 19 fiches thematiques
 ```
 
 ## Compatibilite multi-outils
 
 | Outil | Fichier configure | Methode |
-|---|---|---|
+| --- | --- | --- |
 | **Claude Code** | `.claude/skills/` + `.claude/commands/` + `CLAUDE.md` | Skills + slash commands |
 | **Cursor** | `.cursorrules` | Regles injectees |
+| **Windsurf** | `.windsurfrules` | Regles injectees |
+| **Cline** | `.clinerules` | Regles injectees |
+| **RooCode** | `.roo/rules/dolibarr.md` | Regles injectees |
 | **Codex** | `AGENTS.md` | Instructions agent |
 
 L'installateur detecte automatiquement l'outil ou accepte un argument explicite.
