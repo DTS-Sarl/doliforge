@@ -108,11 +108,34 @@ select_tool() {
 # Détection de la racine du projet
 # ============================================================================
 find_project_root() {
-    # Remonter jusqu'à la racine git si disponible
+    local current_dir
+    current_dir="$(pwd)"
     local git_root
-    git_root=$(git rev-parse --show-toplevel 2>/dev/null) && echo "$git_root" && return
-    # Sinon dossier courant
-    pwd
+    git_root=$(git rev-parse --show-toplevel 2>/dev/null) || git_root=""
+
+    # Si on est déjà à la racine git, pas de choix nécessaire
+    if [ -z "$git_root" ] || [ "$git_root" = "$current_dir" ]; then
+        echo "$current_dir"
+        return
+    fi
+
+    # Le dossier courant diffère de la racine git — demander à l'utilisateur
+    echo "" >&2
+    echo -e "  ${BOLD}Quel dossier utiliser comme racine du projet ?${NC}" >&2
+    echo -e "  ${CYAN}›${NC} 1) ${current_dir}  ${DIM}(dossier courant)${NC}" >&2
+    echo -e "     2) ${git_root}  ${DIM}(racine git)${NC}" >&2
+    echo "" >&2
+    printf "  Numéro + Entrée [1] : " >&2
+
+    local choice
+    read -r choice < /dev/tty
+    choice="${choice:-1}"
+
+    if [ "$choice" = "2" ]; then
+        echo "$git_root"
+    else
+        echo "$current_dir"
+    fi
 }
 
 # ============================================================================
