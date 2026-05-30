@@ -40,6 +40,11 @@ function monmodule_admin_prepare_head()
 	$head[$h][2] = 'settings';
 	$h++;
 
+	$head[$h][0] = dol_buildpath('/monmodule/admin/test.php', 1);
+	$head[$h][1] = $langs->trans('Test');
+	$head[$h][2] = 'test';
+	$h++;
+
 	$head[$h][0] = dol_buildpath('/monmodule/admin/about.php', 1);
 	$head[$h][1] = $langs->trans('About');
 	$head[$h][2] = 'about';

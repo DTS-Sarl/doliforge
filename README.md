@@ -76,27 +76,35 @@ cd /chemin/vers/autre-projet
 
 ### Skill `dolibarr-module-dev`
 
-19 fiches couvrant tout le cycle de vie d'un module :
+25 fiches couvrant tout le cycle de vie d'un module :
 
 | Fiche | Sujet |
 | --- | --- |
+| `patterns-communs.md` | Fondamentaux reutilisables (GETPOST, CSRF, entity, includes) |
 | `structure-module.md` | Arborescence, nommage, dossier `ajax/`, assets |
 | `descripteur.md` | `modXxx.class.php`, droits, menus, tabs, cronjobs |
 | `objets-metier.md` | `CommonObject`, `$fields`, CRUD, relations FK, validation |
 | `base-de-donnees.md` | SQL, prefixe, `entity`, migrations, helpers SQL |
 | `securite.md` | `GETPOST`, CSRF, SQL, permissions, pages AJAX, upload fichier |
-| `hooks-et-triggers.md` | Hooks, triggers, extrafields, evenements courants |
+| `conventions-code.md` | Helpers, retours, transactions, `.lang`, admin multi-onglets, constantes |
 | `pages-ui.md` | Ossature page, barre d'actions, onglets, liste complete, badges statut |
 | `css-js.md` | Variables CSS, pas de degrades, coherence inter-pages, namespace JS |
-| `conventions-code.md` | Helpers, retours, transactions, `.lang`, admin multi-onglets, constantes |
+| `workflows-statut.md` | Machine a etats, transitions, boutons conditionnels, diagramme |
+| `generation-documents.md` | Modeles PDF (TCPDF), ODT, variables de substitution |
+| `hooks-et-triggers.md` | Hooks, triggers, extrafields, evenements courants |
+| `extrafields.md` | Champs supplementaires programmatiques, types, affichage |
+| `notifications.md` | Emails (CMailFile), evenements agenda, templates |
+| `import-export.md` | Import/export CSV natif et personnalise, operations en masse |
+| `dashboard-widgets.md` | Widgets (boxes), KPIs, page d'accueil module |
+| `api-rest.md` | Consommer et exposer des endpoints REST Dolibarr |
 | `internationalisation.md` | Fichiers `.lang`, `$langs->trans()`, parametres, pluriels |
 | `compatibilite-ecosysteme.md` | Multi-entite, dependances, cycle de test |
+| `compatibilite-versions.md` | Matrice API Dolibarr 18-23, compatibilite PHP |
 | `pieges.md` | Pieges courants, cache, WAF, `restrictedArea` |
 | `debug.md` | Methodologie debug, instruments visuels, erreurs courantes |
-| `refactoring.md` | Restructurer sans casser, extraction de classes, migrations SQL |
 | `performance.md` | Requetes lentes, N+1, index SQL, pagination, cache |
+| `refactoring.md` | Restructurer sans casser, extraction de classes, migrations SQL |
 | `tests.md` | Page de test admin, fixtures SQL, checklist recette |
-| `api-rest.md` | Consommer et exposer des endpoints REST Dolibarr |
 | `versioning-changelog.md` | Numerotation versions, format ChangeLog, nommage ZIP |
 | `dolistore-publication.md` | Checklist, ZIP, publication DoliStore |
 
@@ -108,6 +116,7 @@ cd /chemin/vers/autre-projet
 | `dolibarr-createur` | Creation module from scratch — guide 9 etapes, produit le code complet |
 | `dolibarr-optimiseur` | Audit performance : N+1, index manquants, pagination, assets |
 | `dolibarr-migrateur` | Refactoring et migration de modules vers une version Dolibarr cible |
+| `dolibarr-documenteur` | Documentation technique, guide utilisateur, description DoliStore |
 
 ### Template de module
 
@@ -115,6 +124,7 @@ Un squelette de module pret a l'emploi est disponible dans `templates/monmodule/
 
 - `core/modules/modMonmodule.class.php` — descripteur complet
 - `class/monobjet.class.php` — CommonObject avec `$fields`, CRUD, statuts
+- `class/mondetail.class.php` — CommonObjectLine (lignes de detail parent-enfant)
 - `sql/` — table SQL + index + FK
 - `langs/fr_FR/` et `langs/en_US/` — fichiers de traduction complets
 - `lib/monmodule.lib.php` — `prepare_head()` objet + admin
@@ -159,7 +169,8 @@ doliforge/
     │   ├── dolibarr-auditeur.md   # Agent d'audit
     │   ├── dolibarr-createur.md   # Agent de creation
     │   ├── dolibarr-optimiseur.md # Agent de performance
-    │   └── dolibarr-migrateur.md  # Agent de refactoring/migration
+    │   ├── dolibarr-migrateur.md  # Agent de refactoring/migration
+    │   └── dolibarr-documenteur.md # Agent de documentation
     └── skills/
         └── dolibarr-module-dev/
             ├── SKILL.md           # Index principal du skill

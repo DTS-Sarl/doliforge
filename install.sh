@@ -5,7 +5,7 @@
 # ============================================================================
 set -euo pipefail
 
-DOLIFORGE_VERSION="1.6.0"
+DOLIFORGE_VERSION="2.0.0"
 DOLIFORGE_REPO="DTS-Sarl/doliforge"
 DOLIFORGE_BRANCH="main"
 DOLIFORGE_DIR="${HOME}/.doliforge"
