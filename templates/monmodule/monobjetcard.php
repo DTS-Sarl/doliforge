@@ -9,7 +9,9 @@ if (!$res && file_exists('../../main.inc.php')) $res = @include '../../main.inc.
 if (!$res) die('Include of main fails');
 
 dol_include_once('/monmodule/class/monobjet.class.php');
+dol_include_once('/monmodule/class/mondetail.class.php');
 dol_include_once('/monmodule/lib/monmodule.lib.php');
+require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 
 global $db, $conf, $user, $langs, $hookmanager;
 $langs->loadLangs(['monmodule@monmodule']);
@@ -99,6 +101,66 @@ if ($action == 'confirm_delete' && GETPOST('confirm', 'alpha') == 'yes') {
 	} else {
 		setEventMessages($object->error, $object->errors, 'errors');
 	}
+}
+
+// ---- Actions lignes de détail ----
+if ($action == 'addline' && $user->hasRight('monmodule', 'monobjet', 'write')) {
+	$line = new MonDetail($db);
+	$line->fk_monobjet = $object->id;
+	$line->label       = GETPOST('line_label', 'alphanohtml');
+	$line->description = GETPOST('line_description', 'alphanohtml');
+	$line->qty         = (float) GETPOST('line_qty', 'alpha');
+	$line->price       = (float) GETPOST('line_price', 'alpha');
+
+	if (empty($line->label)) {
+		setEventMessages($langs->trans('ErrorFieldRequired', $langs->transnoentities('Label')), null, 'errors');
+	} else {
+		$result = $line->create($user);
+		if ($result > 0) {
+			setEventMessages($langs->trans('DetailLineAdded'), null, 'mesgs');
+		} else {
+			setEventMessages($line->error, null, 'errors');
+		}
+		header('Location: '.$_SERVER['PHP_SELF'].'?id='.$object->id);
+		exit;
+	}
+}
+
+if ($action == 'confirm_deleteline' && GETPOST('confirm', 'alpha') == 'yes') {
+	if ($user->hasRight('monmodule', 'monobjet', 'write')) {
+		$lineid = GETPOST('lineid', 'int');
+		$line = new MonDetail($db);
+		if ($line->fetch($lineid) > 0) {
+			$result = $line->delete($user);
+			if ($result > 0) {
+				setEventMessages($langs->trans('DetailLineDeleted'), null, 'mesgs');
+			}
+		}
+		header('Location: '.$_SERVER['PHP_SELF'].'?id='.$object->id);
+		exit;
+	}
+}
+
+// ---- Action génération document ----
+if ($action == 'builddoc' && $user->hasRight('monmodule', 'monobjet', 'write')) {
+	$outputlangs = $langs;
+	$model = GETPOST('model', 'alphanohtml');
+	if (!empty($model)) {
+		$object->model_pdf = $model;
+	}
+	$result = $object->generateDocument($object->model_pdf ?: 'standard_monobjet', $outputlangs);
+	if ($result <= 0) {
+		setEventMessages($object->error, $object->errors, 'errors');
+	}
+}
+
+if ($action == 'remove_file' && $user->hasRight('monmodule', 'monobjet', 'write')) {
+	require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
+	$file = GETPOST('file', 'alphanohtml');
+	$filepath = $conf->monmodule->dir_output.'/'.dol_sanitizeFileName($object->ref).'/'.dol_sanitizeFileName($file);
+	dol_delete_file($filepath);
+	header('Location: '.$_SERVER['PHP_SELF'].'?id='.$object->id);
+	exit;
 }
 
 // ---- Affichage ----
@@ -213,6 +275,112 @@ if ($action == 'create' || $action == 'edit') {
 }
 
 print dol_get_fiche_end();
+
+// ---- Lignes de détail (MonDetail) ----
+if ($object->id > 0 && $action != 'create') {
+	$lines = MonDetail::fetchAllByParent($db, $object->id);
+
+	print '<br>';
+	print load_fiche_titre($langs->trans('DetailLines'), '', '');
+
+	// Confirmation suppression ligne
+	if ($action == 'deleteline') {
+		$formconfirm = $form->formconfirm(
+			$_SERVER['PHP_SELF'].'?id='.$object->id.'&lineid='.GETPOST('lineid', 'int'),
+			$langs->trans('DeleteDetailLine'),
+			$langs->trans('ConfirmDeleteDetailLine'),
+			'confirm_deleteline', '', 0, 1
+		);
+		print $formconfirm;
+	}
+
+	print '<table class="noborder noshadow centpercent">';
+
+	// En-tête
+	print '<tr class="liste_titre">';
+	print '<th>'.$langs->trans('Label').'</th>';
+	print '<th>'.$langs->trans('Description').'</th>';
+	print '<th class="right">'.$langs->trans('Qty').'</th>';
+	print '<th class="right">'.$langs->trans('UnitPrice').'</th>';
+	print '<th class="right">'.$langs->trans('Total').'</th>';
+	if ($user->hasRight('monmodule', 'monobjet', 'write') && $action != 'edit') {
+		print '<th class="right"></th>';
+	}
+	print '</tr>';
+
+	// Lignes existantes
+	$grandTotal = 0;
+	if (!empty($lines)) {
+		foreach ($lines as $line) {
+			print '<tr class="oddeven">';
+			print '<td>'.dol_escape_htmltag($line->label).'</td>';
+			print '<td>'.dol_escape_htmltag($line->description).'</td>';
+			print '<td class="right">'.$line->qty.'</td>';
+			print '<td class="right">'.price($line->price).'</td>';
+			print '<td class="right">'.price($line->total).'</td>';
+			if ($user->hasRight('monmodule', 'monobjet', 'write') && $action != 'edit') {
+				print '<td class="right nowraponall">';
+				print '<a class="deletefielda" href="'.$_SERVER['PHP_SELF'].'?id='.$object->id.'&action=deleteline&lineid='.$line->id.'&token='.newToken().'">';
+				print img_delete();
+				print '</a>';
+				print '</td>';
+			}
+			print '</tr>';
+			$grandTotal += $line->total;
+		}
+	}
+
+	// Ligne total
+	if (!empty($lines)) {
+		$colspan = ($user->hasRight('monmodule', 'monobjet', 'write') && $action != 'edit') ? 4 : 4;
+		print '<tr class="liste_total">';
+		print '<td colspan="'.$colspan.'" class="right"><strong>'.$langs->trans('Total').'</strong></td>';
+		print '<td class="right"><strong>'.price($grandTotal).'</strong></td>';
+		if ($user->hasRight('monmodule', 'monobjet', 'write') && $action != 'edit') {
+			print '<td></td>';
+		}
+		print '</tr>';
+	}
+
+	// Formulaire d'ajout de ligne
+	if ($user->hasRight('monmodule', 'monobjet', 'write') && $action != 'edit') {
+		print '<tr class="oddeven">';
+		print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
+		print '<input type="hidden" name="token" value="'.newToken().'">';
+		print '<input type="hidden" name="action" value="addline">';
+		print '<input type="hidden" name="id" value="'.$object->id.'">';
+		print '<td><input type="text" name="line_label" class="flat minwidth200" placeholder="'.$langs->trans('Label').'"></td>';
+		print '<td><input type="text" name="line_description" class="flat minwidth150" placeholder="'.$langs->trans('Description').'"></td>';
+		print '<td class="right"><input type="text" name="line_qty" class="flat width50 right" value="1"></td>';
+		print '<td class="right"><input type="text" name="line_price" class="flat width75 right" value="0"></td>';
+		print '<td></td>';
+		print '<td class="right"><input type="submit" class="button" value="+"></td>';
+		print '</form>';
+		print '</tr>';
+	}
+
+	print '</table>';
+}
+
+// ---- Section documents ----
+if ($object->id > 0 && $action != 'edit' && $action != 'create') {
+	$formfile = new FormFile($db);
+	$objref   = dol_sanitizeFileName($object->ref);
+	$filedir  = $conf->monmodule->dir_output.'/'.$objref;
+
+	print '<div class="fichecenter"><div class="fichehalfleft">';
+	print $formfile->showdocuments(
+		'monmodule:MonObjet',
+		$objref,
+		$filedir,
+		$_SERVER['PHP_SELF'].'?id='.$object->id,
+		$user->hasRight('monmodule', 'monobjet', 'write'),
+		$user->hasRight('monmodule', 'monobjet', 'delete'),
+		$object->model_pdf ?? 'standard_monobjet',
+		1, 0, 0, 0, 0, '', '', '', '', ''
+	);
+	print '</div></div>';
+}
 
 // ---- Barre d'actions ----
 if ($object->id > 0 && $action != 'edit') {

@@ -52,6 +52,32 @@ MonModuleReadObjects=Lire les objets
 MonModuleWriteObjects=Créer et modifier les objets
 MonModuleDeleteObjects=Supprimer les objets
 
+# ---- Lignes de détail ----
+DetailLines=Lignes de détail
+DetailLineAdded=Ligne ajoutée
+DetailLineDeleted=Ligne supprimée
+DeleteDetailLine=Supprimer la ligne
+ConfirmDeleteDetailLine=Êtes-vous sûr de vouloir supprimer cette ligne ?
+Qty=Quantité
+UnitPrice=Prix unitaire
+Total=Total
+
+# ---- Documents ----
+DocumentModelStandard=Modèle standard
+GenerateDocument=Générer le document
+
+# ---- Dashboard ----
+MonModuleDashboard=Tableau de bord Mon Module
+MonModuleLatestObjects=Les %s derniers objets
+TotalObjects=Total des objets
+ShowAll=Voir tout
+MonModuleStats=Statistiques Mon Module
+
+# ---- Tests ----
+MonModuleTest=Tests du module
+AllTestsPassed=Tous les tests sont passés avec succès
+SomeTestsFailed=Certains tests ont échoué
+
 # ---- Erreurs ----
 ErrorMonObjetNotFound=Objet introuvable
 ErrorMonObjetRefExists=Cette référence existe déjà

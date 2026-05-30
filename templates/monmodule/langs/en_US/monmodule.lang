@@ -52,6 +52,32 @@ MonModuleReadObjects=Read objects
 MonModuleWriteObjects=Create and modify objects
 MonModuleDeleteObjects=Delete objects
 
+# ---- Detail lines ----
+DetailLines=Detail lines
+DetailLineAdded=Line added
+DetailLineDeleted=Line deleted
+DeleteDetailLine=Delete line
+ConfirmDeleteDetailLine=Are you sure you want to delete this line?
+Qty=Quantity
+UnitPrice=Unit price
+Total=Total
+
+# ---- Documents ----
+DocumentModelStandard=Standard model
+GenerateDocument=Generate document
+
+# ---- Dashboard ----
+MonModuleDashboard=My Module Dashboard
+MonModuleLatestObjects=Last %s objects
+TotalObjects=Total objects
+ShowAll=Show all
+MonModuleStats=Module Statistics
+
+# ---- Tests ----
+MonModuleTest=Module Tests
+AllTestsPassed=All tests passed successfully
+SomeTestsFailed=Some tests failed
+
 # ---- Errors ----
 ErrorMonObjetNotFound=Object not found
 ErrorMonObjetRefExists=This reference already exists

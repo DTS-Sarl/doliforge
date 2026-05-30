@@ -229,4 +229,32 @@ class MonObjet extends CommonObject
 
 		return $result;
 	}
+
+	// ============================================================
+	// Génération de documents
+	// ============================================================
+
+	/**
+	 * Générer un document PDF/ODT
+	 *
+	 * @param  string    $modele      Nom du modèle
+	 * @param  Translate $outputlangs Langue
+	 * @param  int       $hidedetails Masquer détails
+	 * @param  int       $hidedesc    Masquer descriptions
+	 * @param  int       $hideref     Masquer référence
+	 * @return int       1 si OK, <= 0 si erreur
+	 */
+	public function generateDocument($modele, $outputlangs, $hidedetails = 0, $hidedesc = 0, $hideref = 0)
+	{
+		global $conf;
+
+		$outputlangs->loadLangs(['monmodule@monmodule']);
+
+		if (empty($modele)) {
+			$modele = getDolGlobalString('MONMODULE_ADDON_PDF', 'standard_monobjet');
+		}
+
+		$modelpath = 'core/modules/monmodule/doc/';
+		return $this->commonGenerateDocument($modelpath, $modele, $outputlangs, $hidedetails, $hidedesc, $hideref);
+	}
 }
